@@ -1,0 +1,174 @@
+version: '3.8'
+
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: acervo_postgres
+    environment:
+      POSTGRES_DB: acervo_educacional
+      POSTGRES_USER: acervo_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AcervoSecure123!}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=pt_BR.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acervo_user -d acervo_educacional"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis para cache e sessões
+  redis:
+    image: redis:7-alpine
+    container_name: acervo_redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-RedisSecure123!}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend .NET 8 API
+  backend:
+    build:
+      context: ./backend/AcervoEducacional.Api
+      dockerfile: Dockerfile
+    container_name: acervo_backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=acervo_educacional;Username=acervo_user;Password=${POSTGRES_PASSWORD:-AcervoSecure123!}
+      - ConnectionStrings__Redis=redis:6379,password=${REDIS_PASSWORD:-RedisSecure123!}
+      - JWT__SecretKey=${JWT_SECRET_KEY:-SuperSecretKeyForJWTTokenGeneration123456789}
+      - JWT__Issuer=AcervoEducacional
+      - JWT__Audience=AcervoEducacionalUsers
+      - AWS__AccessKey=${AWS_ACCESS_KEY}
+      - AWS__SecretKey=${AWS_SECRET_KEY}
+      - AWS__BucketName=${AWS_BUCKET_NAME:-acervo-educacional}
+      - AWS__Region=${AWS_REGION:-us-east-1}
+      - Email__SmtpHost=${SMTP_HOST:-smtp.gmail.com}
+      - Email__SmtpPort=${SMTP_PORT:-587}
+      - Email__Username=${SMTP_USERNAME}
+      - Email__Password=${SMTP_PASSWORD}
+      - Senior__ConnectionString=${SENIOR_CONNECTION_STRING}
+      - Hangfire__Dashboard__Username=${HANGFIRE_USERNAME:-admin}
+      - Hangfire__Dashboard__Password=${HANGFIRE_PASSWORD:-HangfireSecure123!}
+    ports:
+      - "5000:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    volumes:
+      - backend_logs:/app/logs
+      - backend_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend/acervo-educacional-frontend
+      dockerfile: Dockerfile
+    container_name: acervo_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=http://localhost:5000/api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Proxy (Opcional - para produção)
+  nginx:
+    image: nginx:alpine
+    container_name: acervo_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites-available:/etc/nginx/sites-available
+      - ./nginx/ssl:/etc/nginx/ssl
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    profiles:
+      - production
+
+  # Backup automático
+  backup:
+    image: postgres:15-alpine
+    container_name: acervo_backup
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-AcervoSecure123!}
+    volumes:
+      - backup_data:/backup
+      - ./scripts/backup.sh:/backup.sh
+    command: |
+      sh -c "
+        chmod +x /backup.sh &&
+        echo '0 2 * * * /backup.sh' | crontab - &&
+        crond -f
+      "
+    depends_on:
+      - postgres
+    networks:
+      - acervo_network
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  backend_uploads:
+    driver: local
+  backup_data:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  acervo_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
