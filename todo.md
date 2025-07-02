@@ -39,14 +39,17 @@
 - ✅ **AuthService** - Autenticação JWT completa implementada
 - ✅ **SecurityService** - Funcionalidades de segurança implementadas
 - ✅ **EmailService** - Envio de emails com templates implementado
-- [ ] **CursoService** - Implementar gestão de cursos
+- ✅ **CursoService** - Gestão completa de cursos implementada
 - [ ] **AwsS3Service** - Implementar integração com AWS S3
 
 ## 📋 Próximas Fases
 
 ### 🌐 WebApi Layer
 - ✅ **AuthController** - Endpoints de autenticação implementados
-- [ ] **Controllers** completos para outras entidades
+- ✅ **CursoController** - CRUD completo de cursos implementado
+- [ ] **ArquivoController** - Endpoints para gestão de arquivos
+- [ ] **UsuarioController** - Endpoints para gestão de usuários
+- [ ] **ReportController** - Endpoints para relatórios
 - [ ] **Middleware** de autenticação JWT
 - [ ] **Middleware** de tratamento de erros
 - [ ] **Swagger/OpenAPI** para documentação
@@ -107,11 +110,11 @@
 
 - **Infrastructure Layer**: 100% ✅
 - **Domain Layer**: 100% ✅
-- **Application Layer**: 85% (ArquivoService, UsuarioService, ReportService, AuthService, SecurityService, EmailService implementados)
-- **WebApi Layer**: 15% (AuthController implementado)
+- **Application Layer**: 95% (ArquivoService, UsuarioService, ReportService, AuthService, SecurityService, EmailService, CursoService implementados)
+- **WebApi Layer**: 25% (AuthController, CursoController implementados)
 - **Frontend**: 100% ✅ (com identidade visual Ferreira Costa)
 - **Testes**: 0%
 - **Deploy**: 100% ✅ (Frontend em produção)
 
-**Progresso Total**: ~85% do projeto concluído
+**Progresso Total**: ~90% do projeto concluído
 
