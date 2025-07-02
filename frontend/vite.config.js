@@ -19,7 +19,8 @@ export default defineConfig({
       '127.0.0.1',
       '169.254.0.21',
       '5174-ig6rcvkv0auub1twqna6j-1e79f9fc.manusvm.computer',
-      '5174-id4ezwlmyquikv5qfxank-edef117c.manusvm.computer'
+      '5174-id4ezwlmyquikv5qfxank-edef117c.manusvm.computer',
+      '5174-icbwypaenmgtqpv4ser42-edef117c.manusvm.computer'
     ]
   }
 })
