@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangfire Dashboard - Acervo Educacional Ferreira Costa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .stat-label {
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .jobs-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background: #f8fafc;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #1e3a8a;
+        }
+        
+        .job-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .job-item:last-child {
+            border-bottom: none;
+        }
+        
+        .job-info {
+            flex: 1;
+        }
+        
+        .job-name {
+            font-weight: 500;
+            color: #1e3a8a;
+        }
+        
+        .job-details {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        
+        .job-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-succeeded {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .status-processing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .demo-note {
+            background: #fef9e7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            color: #92400e;
+        }
+        
+        .demo-note strong {
+            color: #b45309;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔧 Hangfire Dashboard</h1>
+        <p>Sistema Acervo Educacional Ferreira Costa - Gerenciamento de Jobs em Background</p>
+    </div>
+    
+    <div class="container">
+        <div class="demo-note">
+            <strong>📋 DEMONSTRAÇÃO:</strong> Esta é uma versão demo do Hangfire Dashboard. 
+            Em produção, aqui seriam exibidos os jobs reais de sincronização, backup, processamento de uploads e outras tarefas automatizadas.
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">156</div>
+                <div class="stat-label">Jobs Executados Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">3</div>
+                <div class="stat-label">Jobs em Processamento</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Jobs Agendados</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.2%</div>
+                <div class="stat-label">Taxa de Sucesso</div>
+            </div>
+        </div>
+        
+        <div class="jobs-section">
+            <div class="section-header">
+                📊 Jobs Recentes
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Sincronização com Sistema Senior</div>
+                    <div class="job-details">Última execução: há 5 minutos • Próxima: em 55 minutos</div>
+                </div>
+                <span class="job-status status-succeeded">Sucesso</span>
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Backup Automático de Arquivos</div>
+                    <div class="job-details">Executando... • Progresso: 67% (2.3GB/3.4GB)</div>
+                </div>
+                <span class="job-status status-processing">Processando</span>
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Processamento de Uploads</div>
+                    <div class="job-details">15 arquivos na fila • Próxima execução: em 2 minutos</div>
+                </div>
+                <span class="job-status status-scheduled">Agendado</span>
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Limpeza de Logs Antigos</div>
+                    <div class="job-details">Última execução: há 2 horas • Próxima: amanhã às 02:00</div>
+                </div>
+                <span class="job-status status-succeeded">Sucesso</span>
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Relatório de Uso Semanal</div>
+                    <div class="job-details">Geração automática • Próxima: domingo às 23:00</div>
+                </div>
+                <span class="job-status status-scheduled">Agendado</span>
+            </div>
+            
+            <div class="job-item">
+                <div class="job-info">
+                    <div class="job-name">Verificação de Integridade de Dados</div>
+                    <div class="job-details">Última execução: há 6 horas • Próxima: em 18 horas</div>
+                </div>
+                <span class="job-status status-succeeded">Sucesso</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Simular atualizações em tempo real
+        setInterval(() => {
+            const processingJobs = document.querySelectorAll('.status-processing');
+            processingJobs.forEach(job => {
+                const details = job.parentElement.querySelector('.job-details');
+                if (details.textContent.includes('67%')) {
+                    details.textContent = 'Executando... • Progresso: 68% (2.3GB/3.4GB)';
+                } else if (details.textContent.includes('68%')) {
+                    details.textContent = 'Executando... • Progresso: 69% (2.4GB/3.4GB)';
+                }
+            });
+        }, 5000);
+        
+        // Atualizar timestamp
+        setInterval(() => {
+            const timestamps = document.querySelectorAll('.job-details');
+            timestamps.forEach(detail => {
+                if (detail.textContent.includes('há 5 minutos')) {
+                    detail.textContent = detail.textContent.replace('há 5 minutos', 'há 6 minutos');
+                    detail.textContent = detail.textContent.replace('em 55 minutos', 'em 54 minutos');
+                }
+            });
+        }, 60000);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swagger UI - Acervo Educacional API</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        
+        body {
+            margin: 0;
+            background: #fafafa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .custom-header {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .custom-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .custom-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .api-info {
+            background: white;
+            margin: 0 2rem 2rem 2rem;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .api-info h3 {
+            margin: 0 0 1rem 0;
+            color: #1e3a8a;
+        }
+        
+        .endpoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .endpoint-card {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .endpoint-method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        .method-get {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .method-post {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .endpoint-path {
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        .endpoint-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        #swagger-ui {
+            margin: 0 2rem;
+        }
+        
+        .swagger-ui .topbar {
+            display: none;
+        }
+        
+        .demo-note {
+            background: #fef9e7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0 2rem 2rem 2rem;
+            color: #92400e;
+        }
+        
+        .demo-note strong {
+            color: #b45309;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>📚 Swagger UI - API Acervo Educacional</h1>
+        <p>Sistema Acervo Educacional Ferreira Costa - Documentação Interativa da API</p>
+    </div>
+    
+    <div class="demo-note">
+        <strong>🚀 API DEMO FUNCIONAL:</strong> Esta é a documentação interativa da API do Sistema Acervo Educacional. 
+        Todos os endpoints estão funcionais e você pode testá-los diretamente nesta interface!
+    </div>
+    
+    <div class="api-info">
+        <h3>📊 Endpoints Disponíveis</h3>
+        <p>A API oferece os seguintes endpoints para gerenciamento do sistema educacional:</p>
+        
+        <div class="endpoints-grid">
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/api/usuarios</span>
+                </div>
+                <div class="endpoint-desc">Lista todos os usuários do sistema com suas informações e roles</div>
+            </div>
+            
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/api/cursos</span>
+                </div>
+                <div class="endpoint-desc">Recupera todos os cursos disponíveis com detalhes e estatísticas</div>
+            </div>
+            
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/api/arquivos</span>
+                </div>
+                <div class="endpoint-desc">Lista arquivos do sistema com informações de tipo e tamanho</div>
+            </div>
+            
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-post">POST</span>
+                    <span class="endpoint-path">/api/auth/login</span>
+                </div>
+                <div class="endpoint-desc">Autenticação de usuários e geração de tokens JWT</div>
+            </div>
+            
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/health</span>
+                </div>
+                <div class="endpoint-desc">Health check do sistema e verificação de serviços</div>
+            </div>
+            
+            <div class="endpoint-card">
+                <div>
+                    <span class="endpoint-method method-get">GET</span>
+                    <span class="endpoint-path">/api/dashboard/stats</span>
+                </div>
+                <div class="endpoint-desc">Estatísticas do dashboard para métricas em tempo real</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="swagger-ui"></div>
+    
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        // Definição da especificação OpenAPI expandida
+        const spec = {
+            "openapi": "3.0.0",
+            "info": {
+                "title": "Acervo Educacional API",
+                "version": "1.0.0",
+                "description": "API do Sistema Acervo Educacional Ferreira Costa - Plataforma completa para gestão de cursos, usuários e arquivos educacionais",
+                "contact": {
+                    "name": "Equipe Ferreira Costa",
+                    "email": "suporte@ferreiracosta.com"
+                }
+            },
+            "servers": [
+                {
+                    "url": "https://5000-i393ptd8kbp8e9o4ik8gt-edef117c.manusvm.computer",
+                    "description": "Servidor Demo"
+                }
+            ],
+            "paths": {
+                "/api/usuarios": {
+                    "get": {
+                        "summary": "Listar usuários",
+                        "description": "Recupera a lista completa de usuários do sistema com suas informações, roles e status",
+                        "tags": ["Usuários"],
+                        "responses": {
+                            "200": {
+                                "description": "Lista de usuários recuperada com sucesso",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {"type": "boolean"},
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {"type": "integer"},
+                                                            "nome": {"type": "string"},
+                                                            "email": {"type": "string"},
+                                                            "role": {"type": "string", "enum": ["Admin", "Gestor", "Usuario"]},
+                                                            "ativo": {"type": "boolean"},
+                                                            "ultimoLogin": {"type": "string", "format": "date-time"}
+                                                        }
+                                                    }
+                                                },
+                                                "total": {"type": "integer"},
+                                                "message": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "/api/cursos": {
+                    "get": {
+                        "summary": "Listar cursos",
+                        "description": "Recupera todos os cursos disponíveis no sistema com detalhes, estatísticas e status",
+                        "tags": ["Cursos"],
+                        "responses": {
+                            "200": {
+                                "description": "Lista de cursos recuperada com sucesso",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {"type": "boolean"},
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {"type": "integer"},
+                                                            "titulo": {"type": "string"},
+                                                            "descricao": {"type": "string"},
+                                                            "categoria": {"type": "string"},
+                                                            "status": {"type": "string", "enum": ["Ativo", "Rascunho", "Arquivado"]},
+                                                            "duracao": {"type": "string"},
+                                                            "participantes": {"type": "integer"},
+                                                            "criadoEm": {"type": "string", "format": "date-time"}
+                                                        }
+                                                    }
+                                                },
+                                                "total": {"type": "integer"},
+                                                "message": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "/api/arquivos": {
+                    "get": {
+                        "summary": "Listar arquivos",
+                        "description": "Lista todos os arquivos do sistema com informações de tipo, tamanho e associações",
+                        "tags": ["Arquivos"],
+                        "responses": {
+                            "200": {
+                                "description": "Lista de arquivos recuperada com sucesso",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {"type": "boolean"},
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {"type": "integer"},
+                                                            "nome": {"type": "string"},
+                                                            "tipo": {"type": "string"},
+                                                            "tamanho": {"type": "string"},
+                                                            "categoria": {"type": "string"},
+                                                            "cursoId": {"type": "integer"},
+                                                            "uploadEm": {"type": "string", "format": "date-time"}
+                                                        }
+                                                    }
+                                                },
+                                                "total": {"type": "integer"},
+                                                "message": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "/api/auth/login": {
+                    "post": {
+                        "summary": "Autenticação de usuário",
+                        "description": "Realiza login do usuário e retorna token JWT para autenticação",
+                        "tags": ["Autenticação"],
+                        "requestBody": {
+                            "required": true,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "email": {"type": "string", "format": "email"},
+                                            "senha": {"type": "string"}
+                                        },
+                                        "required": ["email", "senha"]
+                                    }
+                                }
+                            }
+                        },
+                        "responses": {
+                            "200": {
+                                "description": "Login realizado com sucesso",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {"type": "boolean"},
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "token": {"type": "string"},
+                                                        "usuario": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "id": {"type": "integer"},
+                                                                "nome": {"type": "string"},
+                                                                "email": {"type": "string"},
+                                                                "role": {"type": "string"}
+                                                            }
+                                                        },
+                                                        "expiresIn": {"type": "string"}
+                                                    }
+                                                },
+                                                "message": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "400": {
+                                "description": "Dados inválidos"
+                            }
+                        }
+                    }
+                },
+                "/health": {
+                    "get": {
+                        "summary": "Health Check",
+                        "description": "Verifica o status de saúde da API e serviços conectados",
+                        "tags": ["Monitoramento"],
+                        "responses": {
+                            "200": {
+                                "description": "Sistema operacional",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "status": {"type": "string"},
+                                                "timestamp": {"type": "string", "format": "date-time"},
+                                                "services": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "database": {"type": "string"},
+                                                        "storage": {"type": "string"},
+                                                        "email": {"type": "string"}
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "/api/dashboard/stats": {
+                    "get": {
+                        "summary": "Estatísticas do Dashboard",
+                        "description": "Recupera métricas e estatísticas em tempo real para o dashboard",
+                        "tags": ["Dashboard"],
+                        "responses": {
+                            "200": {
+                                "description": "Estatísticas recuperadas com sucesso",
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "success": {"type": "boolean"},
+                                                "data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "totalUsuarios": {"type": "integer"},
+                                                        "totalCursos": {"type": "integer"},
+                                                        "totalArquivos": {"type": "integer"},
+                                                        "cursosAtivos": {"type": "integer"},
+                                                        "usuariosAtivos": {"type": "integer"},
+                                                        "ultimaAtualizacao": {"type": "string", "format": "date-time"}
+                                                    }
+                                                },
+                                                "message": {"type": "string"}
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "tags": [
+                {
+                    "name": "Usuários",
+                    "description": "Operações relacionadas ao gerenciamento de usuários"
+                },
+                {
+                    "name": "Cursos",
+                    "description": "Operações relacionadas ao gerenciamento de cursos educacionais"
+                },
+                {
+                    "name": "Arquivos",
+                    "description": "Operações relacionadas ao gerenciamento de arquivos e documentos"
+                },
+                {
+                    "name": "Autenticação",
+                    "description": "Operações de autenticação e autorização"
+                },
+                {
+                    "name": "Dashboard",
+                    "description": "Operações relacionadas às métricas e estatísticas do dashboard"
+                },
+                {
+                    "name": "Monitoramento",
+                    "description": "Operações de monitoramento e health check do sistema"
+                }
+            ]
+        };
+        
+        // Configuração do Swagger UI
+        window.onload = function() {
+            SwaggerUIBundle({
+                url: '',
+                spec: spec,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                tryItOutEnabled: true,
+                requestInterceptor: function(request) {
+                    // Interceptar requisições para adicionar headers se necessário
+                    request.headers['Content-Type'] = 'application/json';
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    // Interceptar respostas para logging ou processamento
+                    console.log('API Response:', response);
+                    return response;
+                }
+            });
+        };
+    </script>
+</body>
+</html>
+
