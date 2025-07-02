@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -39,6 +40,33 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Cores Ferreira Costa */
+  --color-ferreira-red-50: #fef2f2;
+  --color-ferreira-red-100: #fee2e2;
+  --color-ferreira-red-500: #ef4444;
+  --color-ferreira-red-600: #dc2626;
+  --color-ferreira-red-700: #b91c1c;
+  --color-ferreira-red-900: #7f1d1d;
+  
+  --color-ferreira-green-50: #f0fdf4;
+  --color-ferreira-green-100: #dcfce7;
+  --color-ferreira-green-500: #22c55e;
+  --color-ferreira-green-600: #16a34a;
+  --color-ferreira-green-700: #15803d;
+  --color-ferreira-green-900: #14532d;
+  
+  --color-ferreira-orange-50: #fffbeb;
+  --color-ferreira-orange-100: #fef3c7;
+  --color-ferreira-orange-500: #f59e0b;
+  --color-ferreira-orange-600: #d97706;
+  --color-ferreira-orange-700: #b45309;
+  
+  --color-ferreira-blue-50: #eff6ff;
+  --color-ferreira-blue-100: #dbeafe;
+  --color-ferreira-blue-500: #3b82f6;
+  --color-ferreira-blue-600: #2563eb;
+  --color-ferreira-blue-700: #1d4ed8;
 }
 
 :root {
@@ -116,5 +144,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Barlow', sans-serif;
   }
 }

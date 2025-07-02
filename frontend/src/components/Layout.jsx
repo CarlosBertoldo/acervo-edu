@@ -93,16 +93,20 @@ const Layout = ({ children }) => {
   const Sidebar = ({ mobile = false }) => (
     <div className={`flex flex-col h-full ${mobile ? 'w-full' : 'w-64'}`}>
       {/* Logo */}
-      <div className="flex items-center px-6 py-4 border-b">
+      <div className="flex items-center px-6 py-4 border-b border-ferreira-red-100">
         <div className="flex items-center">
-          <div className="bg-blue-600 p-2 rounded-lg">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="bg-ferreira-red-600 p-2 rounded-lg">
+            <img 
+              src="/src/assets/ferreira-costa-logo-white.png" 
+              alt="Ferreira Costa" 
+              className="h-6 w-auto"
+            />
           </div>
           <div className="ml-3">
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-lg font-semibold text-ferreira-red-700">
               Acervo Educacional
             </h1>
-            <p className="text-xs text-gray-500">Sistema de Gestão</p>
+            <p className="text-xs text-ferreira-red-500">Ferreira Costa</p>
           </div>
         </div>
       </div>
@@ -119,8 +123,8 @@ const Layout = ({ children }) => {
               className={`
                 flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                 ${item.current
-                  ? 'bg-blue-100 text-blue-700 border-r-2 border-blue-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  ? 'bg-ferreira-green-100 text-ferreira-green-700 border-r-2 border-ferreira-green-600'
+                  : 'text-gray-600 hover:bg-ferreira-red-50 hover:text-ferreira-red-700'
                 }
               `}
             >
@@ -135,7 +139,7 @@ const Layout = ({ children }) => {
       <div className="border-t p-4">
         <div className="flex items-center">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-blue-100 text-blue-700 text-sm">
+            <AvatarFallback className="bg-ferreira-red-100 text-ferreira-red-700 text-sm">
               {getUserInitials(user?.nome)}
             </AvatarFallback>
           </Avatar>
@@ -171,7 +175,7 @@ const Layout = ({ children }) => {
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3">
+        <header className="bg-ferreira-red-600 border-b border-ferreira-red-700 px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               {/* Mobile menu button */}
@@ -180,7 +184,7 @@ const Layout = ({ children }) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="lg:hidden mr-2"
+                    className="lg:hidden mr-2 text-white hover:bg-ferreira-red-700"
                     onClick={() => setSidebarOpen(true)}
                   >
                     <Menu className="h-5 w-5" />
@@ -190,7 +194,7 @@ const Layout = ({ children }) => {
 
               {/* Page title */}
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-white">
                   {navigation.find(item => item.current)?.name || 'Dashboard'}
                 </h2>
               </div>
@@ -199,9 +203,9 @@ const Layout = ({ children }) => {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-ferreira-red-700">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-blue-100 text-blue-700">
+                    <AvatarFallback className="bg-white text-ferreira-red-600">
                       {getUserInitials(user?.nome)}
                     </AvatarFallback>
                   </Avatar>

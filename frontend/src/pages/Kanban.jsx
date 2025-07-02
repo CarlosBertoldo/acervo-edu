@@ -188,23 +188,23 @@ const mockCursos = [
 const STATUS_CONFIG = {
   'Backlog': {
     label: 'Backlog',
-    color: 'bg-gray-100 border-gray-300',
-    headerColor: 'bg-gray-50',
-    badgeColor: 'bg-gray-200 text-gray-700',
+    color: 'bg-ferreira-red-100 border-ferreira-red-300',
+    headerColor: 'bg-ferreira-red-50',
+    badgeColor: 'bg-ferreira-red-200 text-ferreira-red-700',
     icon: Clock
   },
   'Em Desenvolvimento': {
     label: 'Em Desenvolvimento',
-    color: 'bg-blue-100 border-blue-300',
-    headerColor: 'bg-blue-50',
-    badgeColor: 'bg-blue-200 text-blue-700',
+    color: 'bg-ferreira-orange-100 border-ferreira-orange-300',
+    headerColor: 'bg-ferreira-orange-50',
+    badgeColor: 'bg-ferreira-orange-200 text-ferreira-orange-700',
     icon: Settings
   },
   'Veiculado': {
     label: 'Veiculado',
-    color: 'bg-green-100 border-green-300',
-    headerColor: 'bg-green-50',
-    badgeColor: 'bg-green-200 text-green-700',
+    color: 'bg-ferreira-green-100 border-ferreira-green-300',
+    headerColor: 'bg-ferreira-green-50',
+    badgeColor: 'bg-ferreira-green-200 text-ferreira-green-700',
     icon: Users
   }
 };
@@ -583,19 +583,19 @@ const Kanban = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{cursosPorStatus['Backlog'].length}</div>
+            <div className="text-2xl font-bold text-ferreira-red-600">{cursosPorStatus['Backlog'].length}</div>
             <div className="text-sm text-gray-600">Total de Cursos</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{cursosPorStatus['Em Desenvolvimento'].length}</div>
+            <div className="text-2xl font-bold text-ferreira-orange-600">{cursosPorStatus['Em Desenvolvimento'].length}</div>
             <div className="text-sm text-gray-600">Em Desenvolvimento</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{cursosPorStatus['Veiculado'].length}</div>
+            <div className="text-2xl font-bold text-ferreira-green-600">{cursosPorStatus['Veiculado'].length}</div>
             <div className="text-sm text-gray-600">Veiculados</div>
           </CardContent>
         </Card>

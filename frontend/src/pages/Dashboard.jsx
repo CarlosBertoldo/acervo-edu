@@ -27,9 +27,9 @@ const mockStats = {
 };
 
 const mockChartData = [
-  { name: 'Backlog', value: 45, color: '#6B7280' },
-  { name: 'Em Desenvolvimento', value: 23, color: '#3B82F6' },
-  { name: 'Veiculado', value: 88, color: '#10B981' }
+  { name: 'Backlog', value: 45, color: '#DC2626' },
+  { name: 'Em Desenvolvimento', value: 23, color: '#F59E0B' },
+  { name: 'Veiculado', value: 88, color: '#16A34A' }
 ];
 
 const mockActivities = [
@@ -113,7 +113,7 @@ const Dashboard = () => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-ferreira-red-600" />
           <span className="text-gray-600">Carregando dashboard...</span>
         </div>
       </div>
@@ -131,7 +131,7 @@ const Dashboard = () => {
         <button
           onClick={handleRefresh}
           disabled={refreshing}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="flex items-center space-x-2 bg-ferreira-red-600 text-white px-4 py-2 rounded-lg hover:bg-ferreira-red-700 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Atualizar</span>
@@ -140,43 +140,43 @@ const Dashboard = () => {
 
       {/* Cards de Estatísticas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-ferreira-red-500 to-ferreira-red-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100">Total de Cursos</p>
+              <p className="text-ferreira-red-100">Total de Cursos</p>
               <p className="text-3xl font-bold">{mockStats.totalCursos}</p>
             </div>
-            <BookOpen className="h-12 w-12 text-blue-200" />
+            <BookOpen className="h-12 w-12 text-ferreira-red-200" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-ferreira-green-500 to-ferreira-green-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100">Total de Arquivos</p>
+              <p className="text-ferreira-green-100">Total de Arquivos</p>
               <p className="text-3xl font-bold">{mockStats.totalArquivos}</p>
             </div>
-            <FileText className="h-12 w-12 text-green-200" />
+            <FileText className="h-12 w-12 text-ferreira-green-200" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-ferreira-orange-500 to-ferreira-orange-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100">Total de Usuários</p>
+              <p className="text-ferreira-orange-100">Total de Usuários</p>
               <p className="text-3xl font-bold">{mockStats.totalUsuarios}</p>
             </div>
-            <Users className="h-12 w-12 text-purple-200" />
+            <Users className="h-12 w-12 text-ferreira-orange-200" />
           </div>
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+        <div className="bg-gradient-to-r from-ferreira-blue-500 to-ferreira-blue-600 rounded-lg p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100">Cursos Ativos</p>
+              <p className="text-ferreira-blue-100">Cursos Ativos</p>
               <p className="text-3xl font-bold">{mockStats.cursosAtivos}</p>
             </div>
-            <TrendingUp className="h-12 w-12 text-orange-200" />
+            <TrendingUp className="h-12 w-12 text-ferreira-blue-200" />
           </div>
         </div>
       </div>
