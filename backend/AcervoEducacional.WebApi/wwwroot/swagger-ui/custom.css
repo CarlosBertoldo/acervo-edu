@@ -1,0 +1,355 @@
+/* CSS Customizado para Swagger UI - Identidade Visual Ferreira Costa */
+
+/* Importa fonte Barlow conforme manual da marca */
+@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+/* Variáveis de cores Ferreira Costa */
+:root {
+  --fc-red: #DC2626;        /* Vermelho principal */
+  --fc-green: #16A34A;      /* Verde secundário */
+  --fc-orange: #F59E0B;     /* Laranja/Amarelo de apoio */
+  --fc-blue: #2563EB;       /* Azul decorativo */
+  --fc-red-dark: #B91C1C;   /* Vermelho escuro */
+  --fc-red-light: #FEF2F2;  /* Vermelho claro */
+  --fc-gray-50: #F9FAFB;
+  --fc-gray-100: #F3F4F6;
+  --fc-gray-200: #E5E7EB;
+  --fc-gray-300: #D1D5DB;
+  --fc-gray-400: #9CA3AF;
+  --fc-gray-500: #6B7280;
+  --fc-gray-600: #4B5563;
+  --fc-gray-700: #374151;
+  --fc-gray-800: #1F2937;
+  --fc-gray-900: #111827;
+}
+
+/* Fonte global */
+* {
+  font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Header principal */
+.swagger-ui .topbar {
+  background: linear-gradient(135deg, var(--fc-red) 0%, var(--fc-red-dark) 100%) !important;
+  border-bottom: 3px solid var(--fc-green) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+}
+
+.swagger-ui .topbar .download-url-wrapper {
+  display: none !important;
+}
+
+/* Logo e título */
+.swagger-ui .topbar-wrapper img {
+  content: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI0ZGRkZGRiIvPgo8cGF0aCBkPSJNMTAgMTBIMzBWMTZIMTBWMTBaIiBmaWxsPSIjREMyNjI2Ii8+CjxwYXRoIGQ9Ik0xMCAxOEgzMFYyNEgxMFYxOFoiIGZpbGw9IiMxNkEzNEEiLz4KPHN0eWxlPi5zdDB7Zm9udC1mYW1pbHk6J0Jhcmxvdy1Cb2xkJywgc2Fucy1zZXJpZjsgZm9udC1zaXplOjhweDsgZmlsbDojMzc0MTUxO308L3N0eWxlPgo8dGV4dCB4PSIyMCIgeT0iMzIiIGNsYXNzPSJzdDAiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkZDPC90ZXh0Pgo8L3N2Zz4K') !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.swagger-ui .topbar-wrapper .link::after {
+  content: "Acervo Educacional - Ferreira Costa" !important;
+  color: white !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  margin-left: 12px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.swagger-ui .topbar-wrapper .link {
+  color: transparent !important;
+}
+
+/* Informações da API */
+.swagger-ui .info {
+  background: var(--fc-gray-50) !important;
+  border: 1px solid var(--fc-gray-200) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  margin: 20px 0 !important;
+}
+
+.swagger-ui .info .title {
+  color: var(--fc-red) !important;
+  font-weight: 700 !important;
+  font-size: 28px !important;
+  margin-bottom: 12px !important;
+}
+
+.swagger-ui .info .description {
+  color: var(--fc-gray-700) !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+}
+
+.swagger-ui .info .version {
+  background: var(--fc-green) !important;
+  color: white !important;
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+}
+
+/* Esquemas de autenticação */
+.swagger-ui .auth-wrapper {
+  background: var(--fc-red-light) !important;
+  border: 1px solid var(--fc-red) !important;
+  border-radius: 8px !important;
+  padding: 16px !important;
+}
+
+.swagger-ui .auth-btn-wrapper .btn.authorize {
+  background: var(--fc-red) !important;
+  border-color: var(--fc-red) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.swagger-ui .auth-btn-wrapper .btn.authorize:hover {
+  background: var(--fc-red-dark) !important;
+  border-color: var(--fc-red-dark) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+}
+
+/* Tags e seções */
+.swagger-ui .opblock-tag {
+  background: var(--fc-gray-100) !important;
+  border: 1px solid var(--fc-gray-200) !important;
+  border-radius: 8px !important;
+  margin: 16px 0 !important;
+  overflow: hidden !important;
+}
+
+.swagger-ui .opblock-tag-section h3 {
+  background: linear-gradient(135deg, var(--fc-gray-800) 0%, var(--fc-gray-700) 100%) !important;
+  color: white !important;
+  padding: 16px 20px !important;
+  margin: 0 !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  border: none !important;
+}
+
+/* Operações */
+.swagger-ui .opblock {
+  border-radius: 8px !important;
+  margin: 8px 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.swagger-ui .opblock.opblock-get {
+  border-color: var(--fc-blue) !important;
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary {
+  background: var(--fc-blue) !important;
+  border-color: var(--fc-blue) !important;
+}
+
+.swagger-ui .opblock.opblock-post {
+  border-color: var(--fc-green) !important;
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary {
+  background: var(--fc-green) !important;
+  border-color: var(--fc-green) !important;
+}
+
+.swagger-ui .opblock.opblock-put {
+  border-color: var(--fc-orange) !important;
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary {
+  background: var(--fc-orange) !important;
+  border-color: var(--fc-orange) !important;
+}
+
+.swagger-ui .opblock.opblock-delete {
+  border-color: var(--fc-red) !important;
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary {
+  background: var(--fc-red) !important;
+  border-color: var(--fc-red) !important;
+}
+
+.swagger-ui .opblock.opblock-patch {
+  border-color: var(--fc-gray-600) !important;
+}
+
+.swagger-ui .opblock.opblock-patch .opblock-summary {
+  background: var(--fc-gray-600) !important;
+  border-color: var(--fc-gray-600) !important;
+}
+
+/* Botões */
+.swagger-ui .btn {
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.swagger-ui .btn.execute {
+  background: var(--fc-red) !important;
+  border-color: var(--fc-red) !important;
+  color: white !important;
+}
+
+.swagger-ui .btn.execute:hover {
+  background: var(--fc-red-dark) !important;
+  border-color: var(--fc-red-dark) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3) !important;
+}
+
+.swagger-ui .btn.try-out__btn {
+  background: var(--fc-green) !important;
+  border-color: var(--fc-green) !important;
+  color: white !important;
+}
+
+.swagger-ui .btn.try-out__btn:hover {
+  background: #15803D !important;
+  border-color: #15803D !important;
+}
+
+.swagger-ui .btn.cancel {
+  background: var(--fc-gray-500) !important;
+  border-color: var(--fc-gray-500) !important;
+  color: white !important;
+}
+
+/* Inputs e formulários */
+.swagger-ui input[type="text"],
+.swagger-ui input[type="password"],
+.swagger-ui input[type="email"],
+.swagger-ui textarea,
+.swagger-ui select {
+  border: 2px solid var(--fc-gray-300) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.swagger-ui input[type="text"]:focus,
+.swagger-ui input[type="password"]:focus,
+.swagger-ui input[type="email"]:focus,
+.swagger-ui textarea:focus,
+.swagger-ui select:focus {
+  border-color: var(--fc-red) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* Respostas */
+.swagger-ui .responses-inner h4 {
+  color: var(--fc-gray-800) !important;
+  font-weight: 600 !important;
+}
+
+.swagger-ui .response-col_status {
+  font-weight: 700 !important;
+}
+
+.swagger-ui .response-col_status.response-200 {
+  color: var(--fc-green) !important;
+}
+
+.swagger-ui .response-col_status.response-400,
+.swagger-ui .response-col_status.response-404 {
+  color: var(--fc-orange) !important;
+}
+
+.swagger-ui .response-col_status.response-401,
+.swagger-ui .response-col_status.response-403,
+.swagger-ui .response-col_status.response-500 {
+  color: var(--fc-red) !important;
+}
+
+/* Código de resposta */
+.swagger-ui .highlight-code {
+  background: var(--fc-gray-50) !important;
+  border: 1px solid var(--fc-gray-200) !important;
+  border-radius: 6px !important;
+}
+
+/* Modelos */
+.swagger-ui .model-box {
+  background: var(--fc-gray-50) !important;
+  border: 1px solid var(--fc-gray-200) !important;
+  border-radius: 6px !important;
+}
+
+.swagger-ui .model-title {
+  color: var(--fc-gray-800) !important;
+  font-weight: 600 !important;
+}
+
+/* Scrollbar customizada */
+::-webkit-scrollbar {
+  width: 8px !important;
+  height: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--fc-gray-100) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fc-gray-400) !important;
+  border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fc-gray-500) !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .swagger-ui .topbar-wrapper .link::after {
+    font-size: 14px !important;
+  }
+  
+  .swagger-ui .info .title {
+    font-size: 24px !important;
+  }
+  
+  .swagger-ui .info {
+    padding: 16px !important;
+  }
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.swagger-ui .opblock {
+  animation: fadeIn 0.3s ease-out !important;
+}
+
+/* Estados de loading */
+.swagger-ui .loading {
+  color: var(--fc-red) !important;
+}
+
+/* Footer customizado */
+.swagger-ui .info::after {
+  content: "Desenvolvido com ❤️ pela equipe Ferreira Costa" !important;
+  display: block !important;
+  text-align: center !important;
+  margin-top: 20px !important;
+  padding-top: 20px !important;
+  border-top: 1px solid var(--fc-gray-200) !important;
+  color: var(--fc-gray-500) !important;
+  font-size: 14px !important;
+  font-style: italic !important;
+}
+
