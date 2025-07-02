@@ -10,6 +10,8 @@ using AcervoEducacional.Infrastructure.Repositories;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Serilog;
+using AspNetCoreRateLimit;
+using AcervoEducacional.WebApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +74,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configurar Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
+builder.Services.AddInMemoryRateLimiting();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+
 // Configurar Hangfire
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
@@ -110,7 +119,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Aplicar Headers de Segurança
+app.UseSecurityHeaders();
+
 app.UseCors("AllowAll");
+
+// Aplicar Rate Limiting
+app.UseIpRateLimiting();
 
 app.UseAuthentication();
 app.UseAuthorization();
