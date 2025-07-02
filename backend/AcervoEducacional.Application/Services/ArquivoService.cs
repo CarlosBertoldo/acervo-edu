@@ -15,7 +15,7 @@ public class ArquivoService : IArquivoService
     private readonly IArquivoRepository _arquivoRepository;
     private readonly ICursoRepository _cursoRepository;
     private readonly IAwsS3Service _s3Service;
-    private readonly ILogger<ArquivoService> _logger;
+    private readonly FileValidationService _fileValidationService;
     
     // Configurações de upload
     private readonly string[] _tiposPermitidos = {
@@ -31,18 +31,19 @@ public class ArquivoService : IArquivoService
         // Áudios
         "audio/mp3", "audio/wav", "audio/ogg", "audio/m4a", "audio/aac"
     };
-    
-    private const long _tamanhoMaximo = 500 * 1024 * 1024; // 500MB
+    private readonly ILogger<ArquivoService> _logger;
 
     public ArquivoService(
         IArquivoRepository arquivoRepository,
         ICursoRepository cursoRepository,
         IAwsS3Service s3Service,
+        FileValidationService fileValidationService,
         ILogger<ArquivoService> logger)
     {
         _arquivoRepository = arquivoRepository;
         _cursoRepository = cursoRepository;
         _s3Service = s3Service;
+        _fileValidationService = fileValidationService;
         _logger = logger;
     }
 
@@ -144,11 +145,11 @@ public class ArquivoService : IArquivoService
                 return ApiResponse<ArquivoResponseDto>.Error("Curso não encontrado");
             }
 
-            // Validar arquivo
-            var validationResult = ValidateFile(dto.Arquivo);
-            if (!validationResult.IsSuccess)
+            // Validação avançada do arquivo
+            var validationResult = await _fileValidationService.ValidateFileAsync(dto.Arquivo);
+            if (!validationResult.IsValid)
             {
-                return ApiResponse<ArquivoResponseDto>.Error(validationResult.Message);
+                return ApiResponse<ArquivoResponseDto>.Error(validationResult.ErrorMessage);
             }
 
             // Calcular hash SHA256 para detectar duplicatas
@@ -377,26 +378,6 @@ public class ArquivoService : IArquivoService
     }
 
     #region Private Methods
-
-    private (bool IsSuccess, string Message) ValidateFile(Microsoft.AspNetCore.Http.IFormFile file)
-    {
-        if (file == null || file.Length == 0)
-        {
-            return (false, "Arquivo é obrigatório");
-        }
-
-        if (file.Length > _tamanhoMaximo)
-        {
-            return (false, $"Arquivo muito grande. Tamanho máximo: {FormatFileSize(_tamanhoMaximo)}");
-        }
-
-        if (!_tiposPermitidos.Contains(file.ContentType.ToLower()))
-        {
-            return (false, "Tipo de arquivo não permitido");
-        }
-
-        return (true, string.Empty);
-    }
 
     private async Task<string> CalculateFileHashAsync(Stream stream)
     {

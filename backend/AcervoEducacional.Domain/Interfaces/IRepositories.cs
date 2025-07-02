@@ -1,4 +1,5 @@
 using AcervoEducacional.Domain.Entities;
+using AcervoEducacional.Domain.Enums;
 using System.Linq.Expressions;
 
 namespace AcervoEducacional.Domain.Interfaces;
