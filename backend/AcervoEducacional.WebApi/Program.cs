@@ -12,6 +12,7 @@ using Hangfire.PostgreSql;
 using Serilog;
 using AspNetCoreRateLimit;
 using AcervoEducacional.WebApi.Middleware;
+using AcervoEducacional.WebApi.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,9 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configurar serviço de credenciais seguras
+builder.Services.AddCredentialsService();
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -34,13 +38,16 @@ builder.Services.AddControllers()
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Configurar Entity Framework
-builder.Services.AddDbContext<AcervoEducacionalContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Configurar Entity Framework com credenciais seguras
+builder.Services.AddDbContext<AcervoEducacionalContext>((serviceProvider, options) =>
+{
+    var credentialsService = serviceProvider.GetRequiredService<ICredentialsService>();
+    var connectionString = credentialsService.GetDatabaseConnectionString();
+    options.UseNpgsql(connectionString);
+});
 
-// Configurar JWT
+// Configurar JWT com credenciais seguras
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey não configurada");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -53,7 +60,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                builder.Services.BuildServiceProvider().GetRequiredService<ICredentialsService>().GetJwtSecretKey()
+            )),
             ClockSkew = TimeSpan.Zero
         };
     });
@@ -63,15 +72,43 @@ builder.Services.AddAuthorization();
 // Configurar AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
-// Configurar CORS
+// Configurar CORS com base nas flags de segurança
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    var enableStrictCors = builder.Configuration.GetValue<bool>("Security:EnableStrictCors", false);
+    
+    if (enableStrictCors)
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+        // CORS restrito para produção
+        var allowedOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")?.Split(',') 
+            ?? new[] { "https://acervo.ferreiracosta.com", "https://app.ferreiracosta.com" };
+            
+        options.AddPolicy("Production", policy =>
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        });
+        
+        // Log da configuração
+        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("🔒 CORS RESTRITO ativado para domínios: {Origins}", string.Join(", ", allowedOrigins));
+    }
+    else
+    {
+        // CORS permissivo para desenvolvimento
+        options.AddPolicy("Development", policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+        
+        // Log da configuração
+        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("🛠️ CORS PERMISSIVO ativado para desenvolvimento");
+    }
 });
 
 // Configurar Rate Limiting
@@ -122,12 +159,25 @@ app.UseHttpsRedirection();
 // Aplicar Headers de Segurança
 app.UseSecurityHeaders();
 
-app.UseCors("AllowAll");
+// Aplicar CORS baseado na configuração de segurança
+var enableStrictCors = app.Configuration.GetValue<bool>("Security:EnableStrictCors", false);
+if (enableStrictCors)
+{
+    app.UseCors("Production");
+}
+else
+{
+    app.UseCors("Development");
+}
 
 // Aplicar Rate Limiting
 app.UseIpRateLimiting();
 
 app.UseAuthentication();
+
+// Aplicar proteção BOLA (ativada apenas em produção via flag)
+app.UseObjectLevelAuthorization();
+
 app.UseAuthorization();
 
 app.UseHangfireDashboard("/hangfire");
