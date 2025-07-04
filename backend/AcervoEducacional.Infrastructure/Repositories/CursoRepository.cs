@@ -14,14 +14,14 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
     public async Task<Curso?> GetByCodigoAsync(string codigo)
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
-            .FirstOrDefaultAsync(c => c.Codigo.ToLower() == codigo.ToLower());
+            .FirstOrDefaultAsync(c => c.CodigoCurso.ToLower() == codigo.ToLower());
     }
 
-    public async Task<bool> CodigoExistsAsync(string codigo, Guid? excludeId = null)
+    public async Task<bool> CodigoExistsAsync(string codigo, int? excludeId = null)
     {
-        var query = _dbSet.Where(c => c.Codigo.ToLower() == codigo.ToLower());
+        var query = _dbSet.Where(c => c.CodigoCurso.ToLower() == codigo.ToLower());
         
         if (excludeId.HasValue)
         {
@@ -31,39 +31,44 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         return await query.AnyAsync();
     }
 
+    public async Task<bool> CodigoExistsAsync(string codigo)
+    {
+        return await _dbSet.AnyAsync(c => c.CodigoCurso.ToLower() == codigo.ToLower());
+    }
+
     public async Task<IEnumerable<Curso>> GetByStatusAsync(Domain.Enums.StatusCurso status)
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .Where(c => c.Status == status)
-            .OrderBy(c => c.Nome)
+            .OrderBy(c => c.NomeCurso)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Curso>> GetByOrigemAsync(Domain.Enums.OrigemCurso origem)
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .Where(c => c.Origem == origem)
-            .OrderBy(c => c.Nome)
+            .OrderBy(c => c.NomeCurso)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Curso>> GetWithArquivosAsync()
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
-            .OrderBy(c => c.Nome)
+            .OrderBy(c => c.NomeCurso)
             .ToListAsync();
     }
 
-    public async Task<Curso?> GetWithArquivosByIdAsync(Guid id)
+    public async Task<Curso?> GetWithArquivosByIdAsync(int id)
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .FirstOrDefaultAsync(c => c.Id == id);
     }
@@ -75,13 +80,13 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
 
         var term = searchTerm.ToLower();
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
-            .Where(c => c.Nome.ToLower().Contains(term) ||
-                       c.Codigo.ToLower().Contains(term) ||
+            .Where(c => c.NomeCurso.ToLower().Contains(term) ||
+                       c.CodigoCurso.ToLower().Contains(term) ||
                        (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(term)) ||
-                       (c.CriadoPorUsuario != null && c.CriadoPorUsuario.Nome.ToLower().Contains(term)))
-            .OrderBy(c => c.Nome)
+                       (c.UsuarioCriador != null && c.UsuarioCriador.Nome.ToLower().Contains(term)))
+            .OrderBy(c => c.NomeCurso)
             .ToListAsync();
     }
 
@@ -95,7 +100,7 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         Domain.Enums.TipoAcesso? tipoAcesso = null)
     {
         var query = _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .AsQueryable();
 
@@ -103,10 +108,10 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
             var term = searchTerm.ToLower();
-            query = query.Where(c => c.Nome.ToLower().Contains(term) ||
-                               c.Codigo.ToLower().Contains(term) ||
+            query = query.Where(c => c.NomeCurso.ToLower().Contains(term) ||
+                               c.CodigoCurso.ToLower().Contains(term) ||
                                (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(term)) ||
-                               (c.CriadoPorUsuario != null && c.CriadoPorUsuario.Nome.ToLower().Contains(term)));
+                               (c.UsuarioCriador != null && c.UsuarioCriador.Nome.ToLower().Contains(term)));
         }
 
         if (status.HasValue)
@@ -132,7 +137,7 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         var totalCount = await query.CountAsync();
 
         var items = await query
-            .OrderBy(c => c.Nome)
+            .OrderBy(c => c.NomeCurso)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -163,19 +168,19 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
     public async Task<IEnumerable<Curso>> GetKanbanDataAsync()
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .OrderBy(c => c.Status)
-            .ThenBy(c => c.Nome)
+            .ThenBy(c => c.NomeCurso)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Curso>> GetRecentAsync(int count = 10)
     {
         return await _dbSet
-            .Include(c => c.CriadoPorUsuario)
+            .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
-            .OrderByDescending(c => c.UpdatedAt)
+            .OrderByDescending(c => c.AtualizadoEm)
             .Take(count)
             .ToListAsync();
     }

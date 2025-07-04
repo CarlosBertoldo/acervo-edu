@@ -34,16 +34,16 @@ public class CursoService : ICursoService
             var curso = await _cursoRepository.GetByIdAsync(id);
             if (curso == null)
             {
-                return ApiResponse<CursoResponseDto>.Error("Curso não encontrado");
+                return ApiResponse<CursoResponseDto>.ErrorResult("Curso não encontrado");
             }
 
             var response = MapToResponseDto(curso);
-            return ApiResponse<CursoResponseDto>.Success(response);
+            return ApiResponse<CursoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar curso por ID {CursoId}", id);
-            return ApiResponse<CursoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<CursoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -60,8 +60,8 @@ public class CursoService : ICursoService
             {
                 var searchLower = filter.Search.ToLower();
                 query = query.Where(c => 
-                    c.Titulo.ToLower().Contains(searchLower) ||
-                    c.Descricao.ToLower().Contains(searchLower) ||
+                    c.Nome.ToLower().Contains(searchLower) ||
+                    (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(searchLower)) ||
                     c.Codigo.ToLower().Contains(searchLower));
             }
 
@@ -89,8 +89,8 @@ public class CursoService : ICursoService
             query = filter.OrderBy?.ToLower() switch
             {
                 "titulo" => filter.OrderDirection == "desc" 
-                    ? query.OrderByDescending(c => c.Titulo)
-                    : query.OrderBy(c => c.Titulo),
+                    ? query.OrderByDescending(c => c.Nome)
+                    : query.OrderBy(c => c.Nome),
                 "status" => filter.OrderDirection == "desc"
                     ? query.OrderByDescending(c => c.Status)
                     : query.OrderBy(c => c.Status),
@@ -107,21 +107,18 @@ public class CursoService : ICursoService
                 .Select(MapToListDto)
                 .ToList();
 
-            var pagedResponse = new PagedResponse<CursoListDto>
-            {
-                Items = items,
-                TotalItems = totalItems,
-                Page = filter.Page,
-                PageSize = filter.PageSize,
-                TotalPages = (int)Math.Ceiling((double)totalItems / filter.PageSize)
-            };
+            var pagedResponse = new PagedResponse<CursoListDto>(
+                items,
+                totalItems,
+                filter.Page,
+                filter.PageSize);
 
-            return ApiResponse<PagedResponse<CursoListDto>>.Success(pagedResponse);
+            return ApiResponse<PagedResponse<CursoListDto>>.SuccessResult(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar cursos com filtros");
-            return ApiResponse<PagedResponse<CursoListDto>>.Error("Erro interno do servidor");
+            return ApiResponse<PagedResponse<CursoListDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -161,12 +158,12 @@ public class CursoService : ICursoService
 
             kanbanData = kanbanData.OrderBy(k => (int)k.Status).ToList();
 
-            return ApiResponse<List<CursoKanbanDto>>.Success(kanbanData);
+            return ApiResponse<List<CursoKanbanDto>>.SuccessResult(kanbanData);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar dados do Kanban");
-            return ApiResponse<List<CursoKanbanDto>>.Error("Erro interno do servidor");
+            return ApiResponse<List<CursoKanbanDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -178,28 +175,24 @@ public class CursoService : ICursoService
             var validationResult = await ValidateCreateCursoAsync(dto);
             if (!validationResult.Success)
             {
-                return ApiResponse<CursoResponseDto>.Error(validationResult.Message);
+                return ApiResponse<CursoResponseDto>.ErrorResult(validationResult.Message);
             }
 
             // Verificar se código já existe
             var codigoExists = await _cursoRepository.CodigoExistsAsync(dto.Codigo);
             if (codigoExists)
             {
-                return ApiResponse<CursoResponseDto>.Error("Já existe um curso com este código");
+                return ApiResponse<CursoResponseDto>.ErrorResult("Já existe um curso com este código");
             }
 
             var curso = new Curso
             {
-                Titulo = dto.Titulo.Trim(),
-                Descricao = dto.Descricao?.Trim(),
+                Nome = dto.Titulo.Trim(),
+                DescricaoAcademia = dto.Descricao?.Trim(),
                 Codigo = dto.Codigo.Trim().ToUpper(),
                 Status = dto.Status,
                 Origem = dto.Origem,
-                CargaHoraria = dto.CargaHoraria,
-                DataInicio = dto.DataInicio,
-                DataFim = dto.DataFim,
-                Instrutor = dto.Instrutor?.Trim(),
-                Observacoes = dto.Observacoes?.Trim(),
+                ComentariosInternos = dto.Observacoes?.Trim(),
                 CriadoPor = criadoPor,
                 CriadoEm = DateTime.UtcNow
             };
@@ -207,15 +200,15 @@ public class CursoService : ICursoService
             var cursoCreated = await _cursoRepository.AddAsync(curso);
 
             await LogAtividadeAsync(criadoPor, TipoAtividade.CriacaoCurso, 
-                $"Curso '{curso.Titulo}' criado", cursoCreated.Id);
+                $"Curso '{curso.Nome}' criado", cursoCreated.Id);
 
             var response = MapToResponseDto(cursoCreated);
-            return ApiResponse<CursoResponseDto>.Success(response);
+            return ApiResponse<CursoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao criar curso");
-            return ApiResponse<CursoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<CursoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -226,14 +219,14 @@ public class CursoService : ICursoService
             var curso = await _cursoRepository.GetByIdAsync(id);
             if (curso == null)
             {
-                return ApiResponse<CursoResponseDto>.Error("Curso não encontrado");
+                return ApiResponse<CursoResponseDto>.ErrorResult("Curso não encontrado");
             }
 
             // Validações
             var validationResult = await ValidateUpdateCursoAsync(dto, id);
             if (!validationResult.Success)
             {
-                return ApiResponse<CursoResponseDto>.Error(validationResult.Message);
+                return ApiResponse<CursoResponseDto>.ErrorResult(validationResult.Message);
             }
 
             // Verificar se código já existe (exceto para o próprio curso)
@@ -242,34 +235,30 @@ public class CursoService : ICursoService
                 var codigoExists = await _cursoRepository.CodigoExistsAsync(dto.Codigo);
                 if (codigoExists)
                 {
-                    return ApiResponse<CursoResponseDto>.Error("Já existe um curso com este código");
+                    return ApiResponse<CursoResponseDto>.ErrorResult("Já existe um curso com este código");
                 }
             }
 
             // Atualizar campos
-            curso.Titulo = dto.Titulo.Trim();
-            curso.Descricao = dto.Descricao?.Trim();
+            curso.Nome = dto.Titulo.Trim();
+            curso.DescricaoAcademia = dto.Descricao?.Trim();
             curso.Codigo = dto.Codigo.Trim().ToUpper();
-            curso.CargaHoraria = dto.CargaHoraria;
-            curso.DataInicio = dto.DataInicio;
-            curso.DataFim = dto.DataFim;
-            curso.Instrutor = dto.Instrutor?.Trim();
-            curso.Observacoes = dto.Observacoes?.Trim();
-            curso.AtualizadoPor = atualizadoPor;
+            curso.ComentariosInternos = dto.Observacoes?.Trim();
+            curso.AtualizadoPor = atualizadoPor.ToString();
             curso.AtualizadoEm = DateTime.UtcNow;
 
             var cursoUpdated = await _cursoRepository.UpdateAsync(curso);
 
             await LogAtividadeAsync(atualizadoPor, TipoAtividade.EdicaoCurso, 
-                $"Curso '{curso.Titulo}' atualizado", curso.Id);
+                $"Curso '{curso.Nome}' atualizado", curso.Id);
 
             var response = MapToResponseDto(cursoUpdated);
-            return ApiResponse<CursoResponseDto>.Success(response);
+            return ApiResponse<CursoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao atualizar curso {CursoId}", id);
-            return ApiResponse<CursoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<CursoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -280,27 +269,27 @@ public class CursoService : ICursoService
             var curso = await _cursoRepository.GetByIdAsync(id);
             if (curso == null)
             {
-                return ApiResponse<CursoResponseDto>.Error("Curso não encontrado");
+                return ApiResponse<CursoResponseDto>.ErrorResult("Curso não encontrado");
             }
 
             var statusAnterior = curso.Status;
             curso.Status = dto.NovoStatus;
-            curso.AtualizadoPor = atualizadoPor;
+            curso.AtualizadoPor = atualizadoPor.ToString();
             curso.AtualizadoEm = DateTime.UtcNow;
 
             var cursoUpdated = await _cursoRepository.UpdateAsync(curso);
 
             await LogAtividadeAsync(atualizadoPor, TipoAtividade.AlteracaoStatusCurso, 
-                $"Status do curso '{curso.Titulo}' alterado de {GetStatusNome(statusAnterior)} para {GetStatusNome(dto.NovoStatus)}", 
+                $"Status do curso '{curso.Nome}' alterado de {GetStatusNome(statusAnterior)} para {GetStatusNome(dto.NovoStatus)}", 
                 curso.Id);
 
             var response = MapToResponseDto(cursoUpdated);
-            return ApiResponse<CursoResponseDto>.Success(response);
+            return ApiResponse<CursoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao atualizar status do curso {CursoId}", id);
-            return ApiResponse<CursoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<CursoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -311,27 +300,27 @@ public class CursoService : ICursoService
             var curso = await _cursoRepository.GetByIdAsync(id);
             if (curso == null)
             {
-                return ApiResponse<bool>.Error("Curso não encontrado");
+                return ApiResponse<bool>.ErrorResult("Curso não encontrado");
             }
 
             // Verificar se há arquivos associados
             var arquivos = await _arquivoRepository.GetByCursoIdAsync(id);
             if (arquivos.Any())
             {
-                return ApiResponse<bool>.Error("Não é possível excluir um curso que possui arquivos associados");
+                return ApiResponse<bool>.ErrorResult("Não é possível excluir um curso que possui arquivos associados");
             }
 
             await _cursoRepository.DeleteAsync(id);
 
             await LogAtividadeAsync(deletadoPor, TipoAtividade.ExclusaoCurso, 
-                $"Curso '{curso.Titulo}' excluído", curso.Id);
+                $"Curso '{curso.Nome}' excluído", curso.Id);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao excluir curso {CursoId}", id);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -358,79 +347,79 @@ public class CursoService : ICursoService
                     .ToDictionary(g => g.Key.ToString(), g => g.Count())
             };
 
-            return ApiResponse<DashboardStatsDto>.Success(stats);
+            return ApiResponse<DashboardStatsDto>.SuccessResult(stats);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar estatísticas do dashboard");
-            return ApiResponse<DashboardStatsDto>.Error("Erro interno do servidor");
+            return ApiResponse<DashboardStatsDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
     #region Métodos Privados
 
-    private async Task<ApiResponse<bool>> ValidateCreateCursoAsync(CreateCursoDto dto)
+    private async Task<(bool Success, string Message)> ValidateCreateCursoAsync(CreateCursoDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.Titulo))
-            return ApiResponse<bool>.Error("Título é obrigatório");
+            return (false, "Título é obrigatório");
 
         if (dto.Titulo.Length > 200)
-            return ApiResponse<bool>.Error("Título deve ter no máximo 200 caracteres");
+            return (false, "Título deve ter no máximo 200 caracteres");
 
         if (string.IsNullOrWhiteSpace(dto.Codigo))
-            return ApiResponse<bool>.Error("Código é obrigatório");
+            return (false, "Código é obrigatório");
 
         if (dto.Codigo.Length > 20)
-            return ApiResponse<bool>.Error("Código deve ter no máximo 20 caracteres");
+            return (false, "Código deve ter no máximo 20 caracteres");
 
         if (dto.CargaHoraria.HasValue && dto.CargaHoraria <= 0)
-            return ApiResponse<bool>.Error("Carga horária deve ser maior que zero");
+            return (false, "Carga horária deve ser maior que zero");
 
         if (dto.DataInicio.HasValue && dto.DataFim.HasValue && dto.DataInicio > dto.DataFim)
-            return ApiResponse<bool>.Error("Data de início não pode ser posterior à data de fim");
+            return (false, "Data de início não pode ser posterior à data de fim");
 
         if (!string.IsNullOrEmpty(dto.Descricao) && dto.Descricao.Length > 1000)
-            return ApiResponse<bool>.Error("Descrição deve ter no máximo 1000 caracteres");
+            return (false, "Descrição deve ter no máximo 1000 caracteres");
 
         if (!string.IsNullOrEmpty(dto.Instrutor) && dto.Instrutor.Length > 100)
-            return ApiResponse<bool>.Error("Nome do instrutor deve ter no máximo 100 caracteres");
+            return (false, "Nome do instrutor deve ter no máximo 100 caracteres");
 
         if (!string.IsNullOrEmpty(dto.Observacoes) && dto.Observacoes.Length > 500)
-            return ApiResponse<bool>.Error("Observações devem ter no máximo 500 caracteres");
+            return (false, "Observações devem ter no máximo 500 caracteres");
 
-        return ApiResponse<bool>.Success(true);
+        return (true, string.Empty);
     }
 
-    private async Task<ApiResponse<bool>> ValidateUpdateCursoAsync(UpdateCursoDto dto, int cursoId)
+    private async Task<(bool Success, string Message)> ValidateUpdateCursoAsync(UpdateCursoDto dto, int cursoId)
     {
         if (string.IsNullOrWhiteSpace(dto.Titulo))
-            return ApiResponse<bool>.Error("Título é obrigatório");
+            return (false, "Título é obrigatório");
 
         if (dto.Titulo.Length > 200)
-            return ApiResponse<bool>.Error("Título deve ter no máximo 200 caracteres");
+            return (false, "Título deve ter no máximo 200 caracteres");
 
         if (string.IsNullOrWhiteSpace(dto.Codigo))
-            return ApiResponse<bool>.Error("Código é obrigatório");
+            return (false, "Código é obrigatório");
 
         if (dto.Codigo.Length > 20)
-            return ApiResponse<bool>.Error("Código deve ter no máximo 20 caracteres");
+            return (false, "Código deve ter no máximo 20 caracteres");
 
         if (dto.CargaHoraria.HasValue && dto.CargaHoraria <= 0)
-            return ApiResponse<bool>.Error("Carga horária deve ser maior que zero");
+            return (false, "Carga horária deve ser maior que zero");
 
         if (dto.DataInicio.HasValue && dto.DataFim.HasValue && dto.DataInicio > dto.DataFim)
-            return ApiResponse<bool>.Error("Data de início não pode ser posterior à data de fim");
+            return (false, "Data de início não pode ser posterior à data de fim");
 
         if (!string.IsNullOrEmpty(dto.Descricao) && dto.Descricao.Length > 1000)
-            return ApiResponse<bool>.Error("Descrição deve ter no máximo 1000 caracteres");
+            return (false, "Descrição deve ter no máximo 1000 caracteres");
 
         if (!string.IsNullOrEmpty(dto.Instrutor) && dto.Instrutor.Length > 100)
-            return ApiResponse<bool>.Error("Nome do instrutor deve ter no máximo 100 caracteres");
+            return (false, "Nome do instrutor deve ter no máximo 100 caracteres");
 
         if (!string.IsNullOrEmpty(dto.Observacoes) && dto.Observacoes.Length > 500)
-            return ApiResponse<bool>.Error("Observações devem ter no máximo 500 caracteres");
+            return (false, "Observações devem ter no máximo 500 caracteres");
 
-        return ApiResponse<bool>.Success(true);
+        return (true, string.Empty);
     }
 
     private async Task LogAtividadeAsync(int usuarioId, TipoAtividade tipo, string descricao, int? cursoId = null)
@@ -477,21 +466,17 @@ public class CursoService : ICursoService
         return new CursoResponseDto
         {
             Id = curso.Id,
-            Titulo = curso.Titulo,
-            Descricao = curso.Descricao,
+            Titulo = curso.Nome,
+            Descricao = curso.DescricaoAcademia,
             Codigo = curso.Codigo,
             Status = curso.Status,
             StatusNome = GetStatusNome(curso.Status),
             Origem = curso.Origem,
             OrigemNome = curso.Origem.ToString(),
-            CargaHoraria = curso.CargaHoraria,
-            DataInicio = curso.DataInicio,
-            DataFim = curso.DataFim,
-            Instrutor = curso.Instrutor,
-            Observacoes = curso.Observacoes,
+            Observacoes = curso.ComentariosInternos,
             CriadoPor = curso.CriadoPor,
             CriadoEm = curso.CriadoEm,
-            AtualizadoPor = curso.AtualizadoPor,
+            AtualizadoPor = int.TryParse(curso.AtualizadoPor, out int atualizadoPor) ? atualizadoPor : null,
             AtualizadoEm = curso.AtualizadoEm
         };
     }
@@ -501,16 +486,12 @@ public class CursoService : ICursoService
         return new CursoListDto
         {
             Id = curso.Id,
-            Titulo = curso.Titulo,
+            Titulo = curso.Nome,
             Codigo = curso.Codigo,
             Status = curso.Status,
             StatusNome = GetStatusNome(curso.Status),
             Origem = curso.Origem,
             OrigemNome = curso.Origem.ToString(),
-            CargaHoraria = curso.CargaHoraria,
-            DataInicio = curso.DataInicio,
-            DataFim = curso.DataFim,
-            Instrutor = curso.Instrutor,
             CriadoEm = curso.CriadoEm
         };
     }
@@ -520,14 +501,10 @@ public class CursoService : ICursoService
         return new CursoKanbanItemDto
         {
             Id = curso.Id,
-            Titulo = curso.Titulo,
+            Titulo = curso.Nome,
             Codigo = curso.Codigo,
             Origem = curso.Origem,
             OrigemNome = curso.Origem.ToString(),
-            CargaHoraria = curso.CargaHoraria,
-            DataInicio = curso.DataInicio,
-            DataFim = curso.DataFim,
-            Instrutor = curso.Instrutor,
             CriadoEm = curso.CriadoEm
         };
     }

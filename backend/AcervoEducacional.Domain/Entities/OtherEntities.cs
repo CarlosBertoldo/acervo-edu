@@ -55,6 +55,6 @@ public class ConfiguracaoSistema : BaseEntity
     public string Chave { get; set; } = string.Empty;
     public string Valor { get; set; } = string.Empty;
     public string? Descricao { get; set; }
-    public string Tipo { get; set; } = "string";
+    public TipoConfiguracao Tipo { get; set; } = TipoConfiguracao.Texto;
 }
 

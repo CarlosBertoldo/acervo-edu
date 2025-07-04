@@ -17,7 +17,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
         _dbSet = context.Set<T>();
     }
 
-    public virtual async Task<T?> GetByIdAsync(Guid id)
+    public virtual async Task<T?> GetByIdAsync(int id)
     {
         return await _dbSet.FindAsync(id);
     }
@@ -83,10 +83,11 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 
     public virtual async Task<T> AddAsync(T entity)
     {
-        entity.CreatedAt = DateTime.UtcNow;
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.CriadoEm = DateTime.UtcNow;
+        entity.AtualizadoEm = DateTime.UtcNow;
         
         await _dbSet.AddAsync(entity);
+        await _context.SaveChangesAsync();
         return entity;
     }
 
@@ -97,18 +98,27 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
         
         foreach (var entity in entitiesList)
         {
-            entity.CreatedAt = now;
-            entity.UpdatedAt = now;
+            entity.CriadoEm = now;
+            entity.AtualizadoEm = now;
         }
         
         await _dbSet.AddRangeAsync(entitiesList);
+        await _context.SaveChangesAsync();
         return entitiesList;
     }
 
     public virtual T Update(T entity)
     {
-        entity.UpdatedAt = DateTime.UtcNow;
+        entity.AtualizadoEm = DateTime.UtcNow;
         _dbSet.Update(entity);
+        return entity;
+    }
+
+    public virtual async Task<T> UpdateAsync(T entity)
+    {
+        entity.AtualizadoEm = DateTime.UtcNow;
+        _dbSet.Update(entity);
+        await _context.SaveChangesAsync();
         return entity;
     }
 
@@ -117,7 +127,7 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
         var now = DateTime.UtcNow;
         foreach (var entity in entities)
         {
-            entity.UpdatedAt = now;
+            entity.AtualizadoEm = now;
         }
         
         _dbSet.UpdateRange(entities);
@@ -133,7 +143,17 @@ public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
         _dbSet.RemoveRange(entities);
     }
 
-    public virtual async Task<bool> ExistsAsync(Guid id)
+    public virtual async Task DeleteAsync(int id)
+    {
+        var entity = await GetByIdAsync(id);
+        if (entity != null)
+        {
+            _dbSet.Remove(entity);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public virtual async Task<bool> ExistsAsync(int id)
     {
         return await _dbSet.AnyAsync(e => e.Id == id);
     }

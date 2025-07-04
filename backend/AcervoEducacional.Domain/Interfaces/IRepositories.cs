@@ -21,6 +21,9 @@ public interface IUsuarioRepository : IBaseRepository<Usuario>
     Task<Usuario?> GetByEmailAsync(string email);
     Task<bool> EmailExistsAsync(string email);
     Task<IEnumerable<Usuario>> GetUsuariosAtivosAsync();
+    Task<(IEnumerable<Usuario> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search = null, TipoUsuario? tipoUsuario = null, StatusUsuario? status = null, bool? ativo = null, DateTime? criadoApartirDe = null, DateTime? criadoAte = null, string? sortBy = null, string? sortDirection = null);
+    Task<int> CountActiveAdminsAsync();
+    Task<bool> HasDependenciesAsync(int usuarioId);
 }
 
 public interface ICursoRepository : IBaseRepository<Curso>
@@ -38,6 +41,8 @@ public interface IArquivoRepository : IBaseRepository<Arquivo>
     Task<IEnumerable<Arquivo>> GetByCategoriaAsync(CategoriaArquivo categoria);
     Task<IEnumerable<Arquivo>> GetPublicosAsync();
     Task<long> GetTamanhoTotalByCursoAsync(int cursoId);
+    Task<Arquivo?> GetByHashAsync(string hash);
+    Task<(IEnumerable<Arquivo> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search = null, int? cursoId = null, CategoriaArquivo? categoria = null, string? tipoMime = null, bool? isPublico = null, DateTime? criadoApartirDe = null, DateTime? criadoAte = null, long? tamanhoMin = null, long? tamanhoMax = null, string? sortBy = null, string? sortDirection = null);
 }
 
 public interface ILogAtividadeRepository : IBaseRepository<LogAtividade>

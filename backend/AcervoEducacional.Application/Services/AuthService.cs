@@ -62,7 +62,7 @@ public class AuthService : IAuthService
             // Validar entrada
             if (!_emailRegex.IsMatch(request.Email))
             {
-                return ApiResponse<LoginResponseDto>.Error("Email inválido");
+                return ApiResponse<LoginResponseDto>.ErrorResult("Email inválido");
             }
 
             // Buscar usuário
@@ -71,7 +71,7 @@ public class AuthService : IAuthService
             {
                 await LogAtividadeAsync(null, TipoAtividade.LoginFalhou, 
                     $"Tentativa de login com email inexistente: {request.Email}", ipAddress, userAgent);
-                return ApiResponse<LoginResponseDto>.Error("Email ou senha inválidos");
+                return ApiResponse<LoginResponseDto>.ErrorResult("Email ou senha inválidos");
             }
 
             // Verificar se usuário está ativo
@@ -79,7 +79,7 @@ public class AuthService : IAuthService
             {
                 await LogAtividadeAsync(usuario.Id, TipoAtividade.LoginFalhou, 
                     "Tentativa de login com usuário inativo", ipAddress, userAgent);
-                return ApiResponse<LoginResponseDto>.Error("Usuário inativo");
+                return ApiResponse<LoginResponseDto>.ErrorResult("Usuário inativo");
             }
 
             // Verificar bloqueio por tentativas
@@ -87,7 +87,7 @@ public class AuthService : IAuthService
             {
                 await LogAtividadeAsync(usuario.Id, TipoAtividade.LoginFalhou, 
                     "Tentativa de login com usuário bloqueado", ipAddress, userAgent);
-                return ApiResponse<LoginResponseDto>.Error("Usuário temporariamente bloqueado devido a muitas tentativas de login");
+                return ApiResponse<LoginResponseDto>.ErrorResult("Usuário temporariamente bloqueado devido a muitas tentativas de login");
             }
 
             // Verificar senha
@@ -96,7 +96,7 @@ public class AuthService : IAuthService
                 await RegistrarTentativaLoginAsync(usuario.Id, false, ipAddress, userAgent);
                 await LogAtividadeAsync(usuario.Id, TipoAtividade.LoginFalhou, 
                     "Senha incorreta", ipAddress, userAgent);
-                return ApiResponse<LoginResponseDto>.Error("Email ou senha inválidos");
+                return ApiResponse<LoginResponseDto>.ErrorResult("Email ou senha inválidos");
             }
 
             // Login bem-sucedido
@@ -138,12 +138,12 @@ public class AuthService : IAuthService
                 Usuario = MapToUsuarioDto(usuario)
             };
 
-            return ApiResponse<LoginResponseDto>.Success(response);
+            return ApiResponse<LoginResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante login para email {Email}", request.Email);
-            return ApiResponse<LoginResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<LoginResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -155,7 +155,7 @@ public class AuthService : IAuthService
             var sessao = await _sessaoRepository.GetByRefreshTokenAsync(request.RefreshToken);
             if (sessao == null || sessao.IsRevogada || sessao.RefreshExpiresAt < DateTime.UtcNow)
             {
-                return ApiResponse<RefreshTokenResponseDto>.Error("Refresh token inválido ou expirado");
+                return ApiResponse<RefreshTokenResponseDto>.ErrorResult("Refresh token inválido ou expirado");
             }
 
             // Verificar usuário
@@ -163,7 +163,7 @@ public class AuthService : IAuthService
             if (usuario == null || usuario.Status != StatusUsuario.Ativo)
             {
                 await RevogarSessaoAsync(sessao);
-                return ApiResponse<RefreshTokenResponseDto>.Error("Usuário inválido");
+                return ApiResponse<RefreshTokenResponseDto>.ErrorResult("Usuário inválido");
             }
 
             // Gerar novos tokens
@@ -189,12 +189,12 @@ public class AuthService : IAuthService
                 ExpiresAt = sessao.ExpiresAt
             };
 
-            return ApiResponse<RefreshTokenResponseDto>.Success(response);
+            return ApiResponse<RefreshTokenResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante refresh token");
-            return ApiResponse<RefreshTokenResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<RefreshTokenResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -211,12 +211,12 @@ public class AuthService : IAuthService
                     "Logout realizado", null, null);
             }
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante logout");
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -226,14 +226,14 @@ public class AuthService : IAuthService
         {
             if (!_emailRegex.IsMatch(request.Email))
             {
-                return ApiResponse<bool>.Error("Email inválido");
+                return ApiResponse<bool>.ErrorResult("Email inválido");
             }
 
             var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
             if (usuario == null)
             {
                 // Por segurança, sempre retornar sucesso mesmo se email não existir
-                return ApiResponse<bool>.Success(true);
+                return ApiResponse<bool>.SuccessResult(true);
             }
 
             // Invalidar tokens anteriores
@@ -262,12 +262,12 @@ public class AuthService : IAuthService
                 // Não retornar erro para não revelar se o email existe
             }
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante solicitação de recuperação de senha");
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -277,19 +277,19 @@ public class AuthService : IAuthService
         {
             if (!_senhaRegex.IsMatch(request.NovaSenha))
             {
-                return ApiResponse<bool>.Error("Senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e símbolo");
+                return ApiResponse<bool>.ErrorResult("Senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e símbolo");
             }
 
             var tokenRecuperacao = await _tokenRepository.GetByTokenAsync(request.Token);
             if (tokenRecuperacao == null || tokenRecuperacao.IsUsado || tokenRecuperacao.ExpiresAt < DateTime.UtcNow)
             {
-                return ApiResponse<bool>.Error("Token inválido ou expirado");
+                return ApiResponse<bool>.ErrorResult("Token inválido ou expirado");
             }
 
             var usuario = await _usuarioRepository.GetByIdAsync(tokenRecuperacao.UsuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             // Atualizar senha
@@ -311,12 +311,12 @@ public class AuthService : IAuthService
             await LogAtividadeAsync(usuario.Id, TipoAtividade.AlteracaoSenha, 
                 "Senha alterada via recuperação", null, null);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante reset de senha");
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -327,18 +327,18 @@ public class AuthService : IAuthService
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             // Verificar senha atual
             if (!BCrypt.Net.BCrypt.Verify(request.SenhaAtual, usuario.SenhaHash))
             {
-                return ApiResponse<bool>.Error("Senha atual incorreta");
+                return ApiResponse<bool>.ErrorResult("Senha atual incorreta");
             }
 
             if (!_senhaRegex.IsMatch(request.NovaSenha))
             {
-                return ApiResponse<bool>.Error("Nova senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e símbolo");
+                return ApiResponse<bool>.ErrorResult("Nova senha deve ter pelo menos 8 caracteres, incluindo maiúscula, minúscula, número e símbolo");
             }
 
             // Atualizar senha
@@ -350,12 +350,12 @@ public class AuthService : IAuthService
             await LogAtividadeAsync(usuario.Id, TipoAtividade.AlteracaoSenha, 
                 "Senha alterada pelo usuário", null, null);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro durante alteração de senha");
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -382,14 +382,14 @@ public class AuthService : IAuthService
             var sessao = await _sessaoRepository.GetByTokenAsync(token);
             if (sessao == null || sessao.IsRevogada || sessao.ExpiresAt < DateTime.UtcNow)
             {
-                return ApiResponse<bool>.Success(false);
+                return ApiResponse<bool>.SuccessResult(false);
             }
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch
         {
-            return ApiResponse<bool>.Success(false);
+            return ApiResponse<bool>.SuccessResult(false);
         }
     }
 

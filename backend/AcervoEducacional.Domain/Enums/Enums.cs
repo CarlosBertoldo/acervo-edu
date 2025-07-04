@@ -4,7 +4,16 @@ public enum StatusCurso
 {
     Backlog = 1,
     EmDesenvolvimento = 2,
-    Veiculado = 3
+    Veiculado = 3,
+    Rascunho = 4,
+    Planejamento = 5,
+    Revisao = 6,
+    Aprovado = 7,
+    Publicado = 8,
+    Ativo = 9,
+    Pausado = 10,
+    Concluido = 11,
+    Arquivado = 12
 }
 
 public enum TipoAmbiente
@@ -30,7 +39,8 @@ public enum OrigemCurso
 public enum TipoUsuario
 {
     Admin = 1,
-    Usuario = 2
+    Usuario = 2,
+    Administrador = 3
 }
 
 public enum StatusUsuario
@@ -49,7 +59,14 @@ public enum CategoriaArquivo
     PlanoAula = 5,
     Videos = 6,
     Podcast = 7,
-    Outros = 8
+    Outros = 8,
+    Imagem = 9,
+    Video = 10,
+    Audio = 11,
+    Documento = 12,
+    Apresentacao = 13,
+    Planilha = 14,
+    Arquivo = 15
 }
 
 public enum TipoCompartilhamento
@@ -72,7 +89,16 @@ public enum TipoAtividade
     CompartilhamentoArquivo = 9,
     ExclusaoArquivo = 10,
     SincronizacaoSenior = 11,
-    ExportacaoRelatorio = 12
+    ExportacaoRelatorio = 12,
+    LoginFalhou = 13,
+    RefreshToken = 14,
+    SolicitacaoRecuperacaoSenha = 15,
+    AlteracaoSenha = 16,
+    CriacaoUsuario = 17,
+    EdicaoUsuario = 18,
+    ExclusaoUsuario = 19,
+    AlteracaoStatusCurso = 20,
+    EventoSeguranca = 21
 }
 
 public enum StatusSincronizacao
@@ -97,5 +123,14 @@ public enum ResolucaoConflito
     UsarSenior = 2,
     Ignorar = 3,
     Manual = 4
+}
+
+public enum TipoConfiguracao
+{
+    Texto = 1,
+    Numero = 2,
+    Boolean = 3,
+    Senha = 4,
+    Json = 5
 }
 

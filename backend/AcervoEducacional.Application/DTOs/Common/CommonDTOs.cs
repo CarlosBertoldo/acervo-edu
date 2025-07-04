@@ -49,6 +49,10 @@ public class PagedResponse<T>
     public bool HasNextPage { get; set; }
     public bool HasPreviousPage { get; set; }
 
+    public PagedResponse()
+    {
+    }
+
     public PagedResponse(List<T> data, int totalCount, int page, int pageSize)
     {
         Data = data;
@@ -64,6 +68,7 @@ public class PagedResponse<T>
 public class DashboardStatsDto
 {
     public int TotalCursos { get; set; }
+    public int CursosAtivos { get; set; }
     public Dictionary<string, int> CursosPorStatus { get; set; } = new();
     public Dictionary<string, int> CursosPorOrigem { get; set; } = new();
     public int TotalArquivos { get; set; }
@@ -79,7 +84,7 @@ public class AtividadeRecenteDto
 {
     public int Id { get; set; }
     public string UsuarioNome { get; set; } = string.Empty;
-    public string TipoAcao { get; set; } = string.Empty;
+    public string TipoAtividade { get; set; } = string.Empty;
     public string Descricao { get; set; } = string.Empty;
     public DateTime CriadoEm { get; set; }
     public string? CursoNome { get; set; }

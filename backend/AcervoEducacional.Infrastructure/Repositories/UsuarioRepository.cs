@@ -16,7 +16,7 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
         return await _dbSet.FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
-    public async Task<bool> EmailExistsAsync(string email, Guid? excludeId = null)
+    public async Task<bool> EmailExistsAsync(string email, int? excludeId = null)
     {
         var query = _dbSet.Where(u => u.Email.ToLower() == email.ToLower());
         
@@ -28,53 +28,41 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
         return await query.AnyAsync();
     }
 
-    public async Task<IEnumerable<Usuario>> GetByTipoAsync(Domain.Enums.TipoUsuario tipo)
+    public async Task<bool> EmailExistsAsync(string email)
     {
-        return await _dbSet.Where(u => u.Tipo == tipo).ToListAsync();
+        return await _dbSet.AnyAsync(u => u.Email.ToLower() == email.ToLower());
     }
 
-    public async Task<IEnumerable<Usuario>> GetAtivosAsync()
+    public async Task<IEnumerable<Usuario>> GetUsuariosAtivosAsync()
     {
-        return await _dbSet.Where(u => u.Status == Domain.Enums.StatusUsuario.Ativo).ToListAsync();
+        return await _dbSet.Where(u => u.Status == Domain.Enums.StatusUsuario.Ativo && u.DeletadoEm == null).ToListAsync();
     }
 
-    public async Task<IEnumerable<Usuario>> SearchAsync(string searchTerm)
-    {
-        if (string.IsNullOrWhiteSpace(searchTerm))
-            return await GetAllAsync();
-
-        var term = searchTerm.ToLower();
-        return await _dbSet
-            .Where(u => u.Nome.ToLower().Contains(term) ||
-                       u.Email.ToLower().Contains(term) ||
-                       (u.Departamento != null && u.Departamento.ToLower().Contains(term)) ||
-                       (u.Cargo != null && u.Cargo.ToLower().Contains(term)))
-            .ToListAsync();
-    }
-
-    public async Task<(IEnumerable<Usuario> Items, int TotalCount)> GetPagedWithFiltersAsync(
-        int page,
-        int pageSize,
-        string? searchTerm = null,
-        Domain.Enums.TipoUsuario? tipo = null,
-        Domain.Enums.StatusUsuario? status = null,
-        string? departamento = null)
+    public async Task<(IEnumerable<Usuario> Items, int TotalCount)> GetPagedAsync(
+        int page, 
+        int pageSize, 
+        string? search = null, 
+        Domain.Enums.TipoUsuario? tipoUsuario = null, 
+        Domain.Enums.StatusUsuario? status = null, 
+        bool? ativo = null, 
+        DateTime? criadoApartirDe = null, 
+        DateTime? criadoAte = null, 
+        string? sortBy = null, 
+        string? sortDirection = null)
     {
         var query = _dbSet.AsQueryable();
 
-        // Aplicar filtros
-        if (!string.IsNullOrWhiteSpace(searchTerm))
+        // Apply filters
+        if (!string.IsNullOrWhiteSpace(search))
         {
-            var term = searchTerm.ToLower();
-            query = query.Where(u => u.Nome.ToLower().Contains(term) ||
-                                   u.Email.ToLower().Contains(term) ||
-                                   (u.Departamento != null && u.Departamento.ToLower().Contains(term)) ||
-                                   (u.Cargo != null && u.Cargo.ToLower().Contains(term)));
+            var searchTerm = search.ToLower();
+            query = query.Where(u => u.Nome.ToLower().Contains(searchTerm) || 
+                                   u.Email.ToLower().Contains(searchTerm));
         }
 
-        if (tipo.HasValue)
+        if (tipoUsuario.HasValue)
         {
-            query = query.Where(u => u.Tipo == tipo.Value);
+            query = query.Where(u => u.TipoUsuario == tipoUsuario.Value);
         }
 
         if (status.HasValue)
@@ -82,15 +70,44 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
             query = query.Where(u => u.Status == status.Value);
         }
 
-        if (!string.IsNullOrWhiteSpace(departamento))
+        if (ativo.HasValue)
         {
-            query = query.Where(u => u.Departamento != null && u.Departamento.ToLower().Contains(departamento.ToLower()));
+            if (ativo.Value)
+                query = query.Where(u => u.DeletadoEm == null);
+            else
+                query = query.Where(u => u.DeletadoEm != null);
+        }
+
+        if (criadoApartirDe.HasValue)
+        {
+            query = query.Where(u => u.CriadoEm >= criadoApartirDe.Value);
+        }
+
+        if (criadoAte.HasValue)
+        {
+            query = query.Where(u => u.CriadoEm <= criadoAte.Value);
+        }
+
+        // Apply sorting
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            var isDescending = sortDirection?.ToLower() == "desc";
+            query = sortBy.ToLower() switch
+            {
+                "nome" => isDescending ? query.OrderByDescending(u => u.Nome) : query.OrderBy(u => u.Nome),
+                "email" => isDescending ? query.OrderByDescending(u => u.Email) : query.OrderBy(u => u.Email),
+                "criadoem" => isDescending ? query.OrderByDescending(u => u.CriadoEm) : query.OrderBy(u => u.CriadoEm),
+                "ultimologin" => isDescending ? query.OrderByDescending(u => u.UltimoLogin) : query.OrderBy(u => u.UltimoLogin),
+                _ => query.OrderBy(u => u.Nome)
+            };
+        }
+        else
+        {
+            query = query.OrderBy(u => u.Nome);
         }
 
         var totalCount = await query.CountAsync();
-
         var items = await query
-            .OrderBy(u => u.Nome)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -98,20 +115,23 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
         return (items, totalCount);
     }
 
-    public async Task<Dictionary<string, int>> GetStatisticsAsync()
+    public async Task<int> CountActiveAdminsAsync()
     {
-        var total = await _dbSet.CountAsync();
-        var ativos = await _dbSet.CountAsync(u => u.Status == Domain.Enums.StatusUsuario.Ativo);
-        var admins = await _dbSet.CountAsync(u => u.Tipo == Domain.Enums.TipoUsuario.Administrador);
-        var novos = await _dbSet.CountAsync(u => u.CreatedAt >= DateTime.UtcNow.AddDays(-30));
-
-        return new Dictionary<string, int>
-        {
-            { "Total", total },
-            { "Ativos", ativos },
-            { "Administradores", admins },
-            { "Novos", novos }
-        };
+        return await _dbSet.CountAsync(u => (u.TipoUsuario == Domain.Enums.TipoUsuario.Admin || u.TipoUsuario == Domain.Enums.TipoUsuario.Administrador) && 
+                                          u.Status == Domain.Enums.StatusUsuario.Ativo && 
+                                          u.DeletadoEm == null);
     }
+
+    public async Task<bool> HasDependenciesAsync(int usuarioId)
+    {
+        // Check if user has created courses
+        var hasCursos = await _context.Set<Curso>().AnyAsync(c => c.CriadoPor == usuarioId);
+        
+        // Check if user has activity logs
+        var hasLogs = await _context.Set<LogAtividade>().AnyAsync(l => l.UsuarioId == usuarioId);
+        
+        return hasCursos || hasLogs;
+    }
+
 }
 

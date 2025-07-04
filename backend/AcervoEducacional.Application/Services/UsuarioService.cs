@@ -36,16 +36,16 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             if (usuario == null)
             {
-                return ApiResponse<UsuarioResponseDto>.Error("Usuário não encontrado");
+                return ApiResponse<UsuarioResponseDto>.ErrorResult("Usuário não encontrado");
             }
 
             var response = MapToResponseDto(usuario);
-            return ApiResponse<UsuarioResponseDto>.Success(response);
+            return ApiResponse<UsuarioResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar usuário {Id}", id);
-            return ApiResponse<UsuarioResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<UsuarioResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -57,7 +57,7 @@ public class UsuarioService : IUsuarioService
                 filter.Page,
                 filter.PageSize,
                 filter.Search,
-                filter.TipoUsuario,
+                filter.Tipo,
                 filter.Status,
                 filter.Ativo,
                 filter.CriadoApartirDe,
@@ -68,21 +68,18 @@ public class UsuarioService : IUsuarioService
 
             var usuariosDto = usuarios.Select(MapToListDto).ToList();
             
-            var pagedResponse = new PagedResponse<UsuarioListDto>
-            {
-                Data = usuariosDto,
-                Page = filter.Page,
-                PageSize = filter.PageSize,
-                TotalCount = total,
-                TotalPages = (int)Math.Ceiling((double)total / filter.PageSize)
-            };
+            var pagedResponse = new PagedResponse<UsuarioListDto>(
+                usuariosDto,
+                total,
+                filter.Page,
+                filter.PageSize);
 
-            return ApiResponse<PagedResponse<UsuarioListDto>>.Success(pagedResponse);
+            return ApiResponse<PagedResponse<UsuarioListDto>>.SuccessResult(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar usuários com filtros");
-            return ApiResponse<PagedResponse<UsuarioListDto>>.Error("Erro interno do servidor");
+            return ApiResponse<PagedResponse<UsuarioListDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -94,14 +91,14 @@ public class UsuarioService : IUsuarioService
             var validationResult = await ValidateCreateUsuario(dto);
             if (!validationResult.IsSuccess)
             {
-                return ApiResponse<UsuarioResponseDto>.Error(validationResult.Message);
+                return ApiResponse<UsuarioResponseDto>.ErrorResult(validationResult.Message);
             }
 
             // Verificar se email já existe
             var existingUser = await _usuarioRepository.GetByEmailAsync(dto.Email);
             if (existingUser != null)
             {
-                return ApiResponse<UsuarioResponseDto>.Error("Email já está em uso por outro usuário");
+                return ApiResponse<UsuarioResponseDto>.ErrorResult("Email já está em uso por outro usuário");
             }
 
             // Hash da senha
@@ -113,10 +110,10 @@ public class UsuarioService : IUsuarioService
                 Nome = dto.Nome.Trim(),
                 Email = dto.Email.Trim().ToLowerInvariant(),
                 SenhaHash = senhaHash,
-                TipoUsuario = dto.TipoUsuario,
+                Tipo = dto.Tipo,
                 Status = StatusUsuario.Ativo,
                 TentativasLogin = 0,
-                CriadoPor = criadoPor,
+                CriadoPor = criadoPor.ToString(),
                 CriadoEm = DateTime.UtcNow
             };
 
@@ -127,12 +124,12 @@ public class UsuarioService : IUsuarioService
                 usuario.Email, criadoPor);
 
             var response = MapToResponseDto(usuario);
-            return ApiResponse<UsuarioResponseDto>.Success(response);
+            return ApiResponse<UsuarioResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao criar usuário {Email}", dto.Email);
-            return ApiResponse<UsuarioResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<UsuarioResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -143,14 +140,14 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             if (usuario == null)
             {
-                return ApiResponse<UsuarioResponseDto>.Error("Usuário não encontrado");
+                return ApiResponse<UsuarioResponseDto>.ErrorResult("Usuário não encontrado");
             }
 
             // Validações de negócio
             var validationResult = await ValidateUpdateUsuario(dto, id);
             if (!validationResult.IsSuccess)
             {
-                return ApiResponse<UsuarioResponseDto>.Error(validationResult.Message);
+                return ApiResponse<UsuarioResponseDto>.ErrorResult(validationResult.Message);
             }
 
             // Verificar se email já existe em outro usuário
@@ -159,16 +156,16 @@ public class UsuarioService : IUsuarioService
                 var existingUser = await _usuarioRepository.GetByEmailAsync(dto.Email);
                 if (existingUser != null && existingUser.Id != id)
                 {
-                    return ApiResponse<UsuarioResponseDto>.Error("Email já está em uso por outro usuário");
+                    return ApiResponse<UsuarioResponseDto>.ErrorResult("Email já está em uso por outro usuário");
                 }
             }
 
             // Atualizar propriedades
             usuario.Nome = dto.Nome.Trim();
             usuario.Email = dto.Email.Trim().ToLowerInvariant();
-            usuario.TipoUsuario = dto.TipoUsuario;
+            usuario.Tipo = dto.Tipo;
             usuario.Status = dto.Status;
-            usuario.AtualizadoPor = atualizadoPor;
+            usuario.AtualizadoPor = atualizadoPor.ToString();
             usuario.AtualizadoEm = DateTime.UtcNow;
 
             // Se o status mudou para Bloqueado, definir data de bloqueio
@@ -188,12 +185,12 @@ public class UsuarioService : IUsuarioService
                 id, atualizadoPor);
 
             var response = MapToResponseDto(usuario);
-            return ApiResponse<UsuarioResponseDto>.Success(response);
+            return ApiResponse<UsuarioResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao atualizar usuário {Id}", id);
-            return ApiResponse<UsuarioResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<UsuarioResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -204,16 +201,16 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(id);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             // Verificar se é o último administrador
-            if (usuario.TipoUsuario == TipoUsuario.Administrador)
+            if (usuario.Tipo == Tipo.Administrador)
             {
                 var adminCount = await _usuarioRepository.CountActiveAdminsAsync();
                 if (adminCount <= 1)
                 {
-                    return ApiResponse<bool>.Error("Não é possível deletar o último administrador do sistema");
+                    return ApiResponse<bool>.ErrorResult("Não é possível deletar o último administrador do sistema");
                 }
             }
 
@@ -223,7 +220,7 @@ public class UsuarioService : IUsuarioService
             {
                 // Soft delete - apenas desativar
                 usuario.Status = StatusUsuario.Inativo;
-                usuario.AtualizadoPor = deletadoPor;
+                usuario.AtualizadoPor = deletadoPor.ToString();
                 usuario.AtualizadoEm = DateTime.UtcNow;
                 await _usuarioRepository.UpdateAsync(usuario);
 
@@ -241,12 +238,12 @@ public class UsuarioService : IUsuarioService
                     id, deletadoPor);
             }
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao deletar usuário {Id}", id);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -256,22 +253,22 @@ public class UsuarioService : IUsuarioService
         {
             if (string.IsNullOrWhiteSpace(email))
             {
-                return ApiResponse<UsuarioResponseDto>.Error("Email é obrigatório");
+                return ApiResponse<UsuarioResponseDto>.ErrorResult("Email é obrigatório");
             }
 
             var usuario = await _usuarioRepository.GetByEmailAsync(email.Trim().ToLowerInvariant());
             if (usuario == null)
             {
-                return ApiResponse<UsuarioResponseDto>.Error("Usuário não encontrado");
+                return ApiResponse<UsuarioResponseDto>.ErrorResult("Usuário não encontrado");
             }
 
             var response = MapToResponseDto(usuario);
-            return ApiResponse<UsuarioResponseDto>.Success(response);
+            return ApiResponse<UsuarioResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar usuário por email {Email}", email);
-            return ApiResponse<UsuarioResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<UsuarioResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -284,36 +281,36 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             // Verificar senha atual
             if (!BCrypt.Net.BCrypt.Verify(senhaAtual, usuario.SenhaHash))
             {
-                return ApiResponse<bool>.Error("Senha atual incorreta");
+                return ApiResponse<bool>.ErrorResult("Senha atual incorreta");
             }
 
             // Validar nova senha
             if (!ValidatePassword(novaSenha))
             {
-                return ApiResponse<bool>.Error("Nova senha não atende aos critérios de segurança");
+                return ApiResponse<bool>.ErrorResult("Nova senha não atende aos critérios de segurança");
             }
 
             // Atualizar senha
             usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(novaSenha, BCrypt.Net.BCrypt.GenerateSalt(12));
-            usuario.AtualizadoPor = usuarioId;
+            usuario.AtualizadoPor = usuarioId.ToString();
             usuario.AtualizadoEm = DateTime.UtcNow;
 
             await _usuarioRepository.UpdateAsync(usuario);
 
             _logger.LogInformation("Senha alterada com sucesso para usuário {Id}", usuarioId);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao alterar senha do usuário {Id}", usuarioId);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -324,13 +321,13 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             // Validar nova senha
             if (!ValidatePassword(novaSenha))
             {
-                return ApiResponse<bool>.Error("Nova senha não atende aos critérios de segurança");
+                return ApiResponse<bool>.ErrorResult("Nova senha não atende aos critérios de segurança");
             }
 
             // Atualizar senha e resetar tentativas
@@ -338,7 +335,7 @@ public class UsuarioService : IUsuarioService
             usuario.TentativasLogin = 0;
             usuario.BloqueadoAte = null;
             usuario.Status = StatusUsuario.Ativo;
-            usuario.AtualizadoPor = resetadoPor;
+            usuario.AtualizadoPor = resetadoPor.ToString();
             usuario.AtualizadoEm = DateTime.UtcNow;
 
             await _usuarioRepository.UpdateAsync(usuario);
@@ -346,12 +343,12 @@ public class UsuarioService : IUsuarioService
             _logger.LogInformation("Senha resetada com sucesso para usuário {Id} por {ResetadoPor}", 
                 usuarioId, resetadoPor);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao resetar senha do usuário {Id}", usuarioId);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -362,7 +359,7 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             usuario.UltimoLogin = DateTime.UtcNow;
@@ -372,12 +369,12 @@ public class UsuarioService : IUsuarioService
 
             await _usuarioRepository.UpdateAsync(usuario);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao atualizar último login do usuário {Id}", usuarioId);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -388,7 +385,7 @@ public class UsuarioService : IUsuarioService
             var usuario = await _usuarioRepository.GetByIdAsync(usuarioId);
             if (usuario == null)
             {
-                return ApiResponse<bool>.Error("Usuário não encontrado");
+                return ApiResponse<bool>.ErrorResult("Usuário não encontrado");
             }
 
             usuario.TentativasLogin++;
@@ -402,12 +399,12 @@ public class UsuarioService : IUsuarioService
 
             await _usuarioRepository.UpdateAsync(usuario);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao incrementar tentativas de login do usuário {Id}", usuarioId);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -471,7 +468,7 @@ public class UsuarioService : IUsuarioService
             Id = usuario.Id,
             Nome = usuario.Nome,
             Email = usuario.Email,
-            TipoUsuario = usuario.TipoUsuario,
+            Tipo = usuario.Tipo,
             Status = usuario.Status,
             UltimoLogin = usuario.UltimoLogin,
             UltimoIp = usuario.UltimoIp,
@@ -488,7 +485,7 @@ public class UsuarioService : IUsuarioService
             Id = usuario.Id,
             Nome = usuario.Nome,
             Email = usuario.Email,
-            TipoUsuario = usuario.TipoUsuario,
+            Tipo = usuario.Tipo,
             Status = usuario.Status,
             UltimoLogin = usuario.UltimoLogin,
             CriadoEm = usuario.CriadoEm,

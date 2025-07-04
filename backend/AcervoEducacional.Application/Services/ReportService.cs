@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using AcervoEducacional.Application.DTOs.Common;
 using AcervoEducacional.Application.DTOs.Curso;
@@ -38,45 +37,43 @@ public class ReportService : IReportService
         {
             _logger.LogInformation("Gerando estatísticas do dashboard");
 
-            // Buscar dados em paralelo para melhor performance
-            var tasks = new[]
-            {
-                _cursoRepository.GetTotalCountAsync(),
-                _cursoRepository.GetCountByStatusAsync(),
-                _cursoRepository.GetCountByOrigemAsync(),
-                _arquivoRepository.GetTotalCountAsync(),
-                _arquivoRepository.GetCountByCategoriaAsync(),
-                _arquivoRepository.GetTotalSizeAsync(),
-                _usuarioRepository.GetActiveCountAsync(),
-                _logAtividadeRepository.GetRecentActivitiesAsync(10),
-                _cursoRepository.GetLastSyncDateAsync()
-            };
-
-            await Task.WhenAll(tasks);
+            // Buscar dados básicos
+            var cursos = await _cursoRepository.GetAllAsync();
+            var arquivos = await _arquivoRepository.GetAllAsync();
+            var usuarios = await _usuarioRepository.GetAllAsync();
+            var logsRecentes = (await _logAtividadeRepository.GetAllAsync()).OrderByDescending(l => l.CriadoEm).Take(10);
 
             var stats = new DashboardStatsDto
             {
-                TotalCursos = await tasks[0] as int? ?? 0,
-                CursosPorStatus = await tasks[1] as Dictionary<string, int> ?? new(),
-                CursosPorOrigem = await tasks[2] as Dictionary<string, int> ?? new(),
-                TotalArquivos = await tasks[3] as int? ?? 0,
-                ArquivosPorCategoria = await tasks[4] as Dictionary<string, int> ?? new(),
-                TamanhoTotalArquivos = await tasks[5] as long? ?? 0,
-                UsuariosAtivos = await tasks[6] as int? ?? 0,
-                AtividadesRecentes = await tasks[7] as List<AtividadeRecenteDto> ?? new(),
-                UltimaSincronizacao = await tasks[8] as DateTime?
+                TotalCursos = cursos.Count(),
+                CursosAtivos = cursos.Count(c => c.Status == StatusCurso.Ativo),
+                CursosPorStatus = cursos.GroupBy(c => c.Status).ToDictionary(g => g.Key.ToString(), g => g.Count()),
+                CursosPorOrigem = cursos.GroupBy(c => c.Origem).ToDictionary(g => g.Key.ToString(), g => g.Count()),
+                TotalArquivos = arquivos.Count(),
+                ArquivosPorCategoria = arquivos.GroupBy(a => a.Categoria).ToDictionary(g => g.Key.ToString(), g => g.Count()),
+                TamanhoTotalArquivos = arquivos.Sum(a => a.Tamanho),
+                UsuariosAtivos = usuarios.Count(u => u.DeletadoEm == null && u.Status == StatusUsuario.Ativo),
+                AtividadesRecentes = logsRecentes.Select(l => new AtividadeRecenteDto
+                {
+                    Id = l.Id,
+                    UsuarioNome = l.Usuario?.Nome ?? "Sistema",
+                    TipoAtividade = l.TipoAtividade.ToString(),
+                    Descricao = l.Descricao,
+                    CriadoEm = l.CriadoEm
+                }).ToList(),
+                UltimaSincronizacao = cursos.Any() ? cursos.Max(c => c.SyncedAt) : null
             };
 
             stats.TamanhoTotalFormatado = FormatFileSize(stats.TamanhoTotalArquivos);
 
             _logger.LogInformation("Estatísticas do dashboard geradas com sucesso");
 
-            return ApiResponse<DashboardStatsDto>.Success(stats);
+            return ApiResponse<DashboardStatsDto>.SuccessResult(stats);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao gerar estatísticas do dashboard");
-            return ApiResponse<DashboardStatsDto>.Error("Erro interno do servidor");
+            return ApiResponse<DashboardStatsDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -86,25 +83,27 @@ public class ReportService : IReportService
         {
             _logger.LogInformation("Buscando logs de atividade - Página {Page}, Tamanho {PageSize}", page, pageSize);
 
-            var (logs, total) = await _logAtividadeRepository.GetPagedAsync(page, pageSize);
+            var allLogs = await _logAtividadeRepository.GetAllAsync();
+            var totalCount = allLogs.Count();
+            var logs = allLogs.OrderByDescending(l => l.CriadoEm)
+                             .Skip((page - 1) * pageSize)
+                             .Take(pageSize)
+                             .ToList();
 
             var logsDto = logs.Select(MapToLogAtividadeDto).ToList();
 
-            var pagedResponse = new PagedResponse<LogAtividadeDto>
-            {
-                Data = logsDto,
-                Page = page,
-                PageSize = pageSize,
-                TotalCount = total,
-                TotalPages = (int)Math.Ceiling((double)total / pageSize)
-            };
+            var pagedResponse = new PagedResponse<LogAtividadeDto>(
+                logsDto,
+                totalCount,
+                page,
+                pageSize);
 
-            return ApiResponse<PagedResponse<LogAtividadeDto>>.Success(pagedResponse);
+            return ApiResponse<PagedResponse<LogAtividadeDto>>.SuccessResult(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar logs de atividade");
-            return ApiResponse<PagedResponse<LogAtividadeDto>>.Error("Erro interno do servidor");
+            return ApiResponse<PagedResponse<LogAtividadeDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -114,18 +113,41 @@ public class ReportService : IReportService
         {
             _logger.LogInformation("Exportando cursos no formato {Format}", format);
 
-            var (cursos, _) = await _cursoRepository.GetPagedAsync(
-                1, int.MaxValue, // Buscar todos os registros
-                filter.Search,
-                filter.Status,
-                filter.Origem,
-                filter.TipoAmbiente,
-                filter.TipoAcesso,
-                filter.CriadoApartirDe,
-                filter.CriadoAte,
-                filter.SortBy,
-                filter.SortDirection
-            );
+            var allCursos = await _cursoRepository.GetAllAsync();
+            
+            // Apply filters manually
+            var cursosQuery = allCursos.AsQueryable();
+            
+            if (!string.IsNullOrEmpty(filter.Search))
+            {
+                var searchLower = filter.Search.ToLower();
+                cursosQuery = cursosQuery.Where(c => 
+                    c.Nome.ToLower().Contains(searchLower) ||
+                    (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(searchLower)) ||
+                    c.CodigoCurso.ToLower().Contains(searchLower));
+            }
+
+            if (filter.Status.HasValue)
+            {
+                cursosQuery = cursosQuery.Where(c => c.Status == filter.Status.Value);
+            }
+
+            if (filter.Origem.HasValue)
+            {
+                cursosQuery = cursosQuery.Where(c => c.Origem == filter.Origem.Value);
+            }
+
+            if (filter.CriadoApartirDe.HasValue)
+            {
+                cursosQuery = cursosQuery.Where(c => c.CriadoEm >= filter.CriadoApartirDe.Value);
+            }
+
+            if (filter.CriadoAte.HasValue)
+            {
+                cursosQuery = cursosQuery.Where(c => c.CriadoEm <= filter.CriadoAte.Value);
+            }
+
+            var cursos = cursosQuery.ToList();
 
             byte[] data = format.ToLower() switch
             {
@@ -137,12 +159,12 @@ public class ReportService : IReportService
 
             _logger.LogInformation("Exportação de cursos concluída - {Count} registros", cursos.Count);
 
-            return ApiResponse<byte[]>.Success(data);
+            return ApiResponse<byte[]>.SuccessResult(data);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao exportar cursos no formato {Format}", format);
-            return ApiResponse<byte[]>.Error("Erro interno do servidor");
+            return ApiResponse<byte[]>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -152,20 +174,43 @@ public class ReportService : IReportService
         {
             _logger.LogInformation("Exportando arquivos no formato {Format}", format);
 
-            var (arquivos, _) = await _arquivoRepository.GetPagedAsync(
-                1, int.MaxValue, // Buscar todos os registros
-                filter.Search,
-                filter.CursoId,
-                filter.Categoria,
-                filter.TipoMime,
-                filter.IsPublico,
-                filter.CriadoApartirDe,
-                filter.CriadoAte,
-                filter.TamanhoMin,
-                filter.TamanhoMax,
-                filter.SortBy,
-                filter.SortDirection
-            );
+            var allArquivos = await _arquivoRepository.GetAllAsync();
+            
+            // Apply filters manually
+            var arquivosQuery = allArquivos.AsQueryable();
+            
+            if (!string.IsNullOrEmpty(filter.Search))
+            {
+                var searchLower = filter.Search.ToLower();
+                arquivosQuery = arquivosQuery.Where(a => a.Nome.ToLower().Contains(searchLower));
+            }
+
+            if (filter.CursoId.HasValue)
+            {
+                arquivosQuery = arquivosQuery.Where(a => a.CursoId == filter.CursoId.Value);
+            }
+
+            if (filter.Categoria.HasValue)
+            {
+                arquivosQuery = arquivosQuery.Where(a => a.Categoria == filter.Categoria.Value);
+            }
+
+            if (filter.IsPublico.HasValue)
+            {
+                arquivosQuery = arquivosQuery.Where(a => a.IsPublico == filter.IsPublico.Value);
+            }
+
+            if (filter.CriadoApartirDe.HasValue)
+            {
+                arquivosQuery = arquivosQuery.Where(a => a.CriadoEm >= filter.CriadoApartirDe.Value);
+            }
+
+            if (filter.CriadoAte.HasValue)
+            {
+                arquivosQuery = arquivosQuery.Where(a => a.CriadoEm <= filter.CriadoAte.Value);
+            }
+
+            var arquivos = arquivosQuery.ToList();
 
             byte[] data = format.ToLower() switch
             {
@@ -177,12 +222,12 @@ public class ReportService : IReportService
 
             _logger.LogInformation("Exportação de arquivos concluída - {Count} registros", arquivos.Count);
 
-            return ApiResponse<byte[]>.Success(data);
+            return ApiResponse<byte[]>.SuccessResult(data);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao exportar arquivos no formato {Format}", format);
-            return ApiResponse<byte[]>.Error("Erro interno do servidor");
+            return ApiResponse<byte[]>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -192,7 +237,7 @@ public class ReportService : IReportService
         {
             _logger.LogInformation("Exportando logs no formato {Format}", format);
 
-            var (logs, _) = await _logAtividadeRepository.GetPagedAsync(1, int.MaxValue); // Buscar todos
+            var logs = (await _logAtividadeRepository.GetAllAsync()).ToList(); // Buscar todos
 
             byte[] data = format.ToLower() switch
             {
@@ -204,12 +249,12 @@ public class ReportService : IReportService
 
             _logger.LogInformation("Exportação de logs concluída - {Count} registros", logs.Count);
 
-            return ApiResponse<byte[]>.Success(data);
+            return ApiResponse<byte[]>.SuccessResult(data);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao exportar logs no formato {Format}", format);
-            return ApiResponse<byte[]>.Error("Erro interno do servidor");
+            return ApiResponse<byte[]>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -239,7 +284,7 @@ public class ReportService : IReportService
         // Dados
         foreach (var curso in cursos)
         {
-            csv.AppendLine($"\"{curso.Codigo}\",\"{curso.Nome}\",\"{curso.DescricaoAcademia}\"," +
+            csv.AppendLine($"\"{curso.CodigoCurso}\",\"{curso.Nome}\",\"{curso.DescricaoAcademia}\"," +
                           $"\"{curso.Status}\",\"{curso.TipoAmbiente}\",\"{curso.TipoAcesso}\"," +
                           $"\"{curso.DataInicioOperacao?.ToString("dd/MM/yyyy")}\",\"{curso.Origem}\"," +
                           $"\"{curso.CriadoEm:dd/MM/yyyy HH:mm}\"");
@@ -300,7 +345,7 @@ public class ReportService : IReportService
         // Dados
         foreach (var log in logs)
         {
-            csv.AppendLine($"\"{log.Usuario?.Nome}\",\"{log.TipoAcao}\",\"{log.Descricao}\"," +
+            csv.AppendLine($"\"{log.Usuario?.Nome}\",\"{log.TipoAtividade}\",\"{log.Descricao}\"," +
                           $"\"{log.EnderecoIp}\",\"{log.CriadoEm:dd/MM/yyyy HH:mm:ss}\"");
         }
         
@@ -321,7 +366,7 @@ public class ReportService : IReportService
         
         foreach (var curso in cursos)
         {
-            html.AppendLine($"<tr><td>{curso.Codigo}</td><td>{curso.Nome}</td>" +
+            html.AppendLine($"<tr><td>{curso.CodigoCurso}</td><td>{curso.Nome}</td>" +
                            $"<td>{curso.DescricaoAcademia}</td><td>{curso.Status}</td><td>{curso.Origem}</td></tr>");
         }
         
@@ -357,7 +402,7 @@ public class ReportService : IReportService
         
         foreach (var log in logs)
         {
-            html.AppendLine($"<tr><td>{log.Usuario?.Nome}</td><td>{log.TipoAcao}</td>" +
+            html.AppendLine($"<tr><td>{log.Usuario?.Nome}</td><td>{log.TipoAtividade}</td>" +
                            $"<td>{log.Descricao}</td><td>{log.CriadoEm:dd/MM/yyyy HH:mm}</td></tr>");
         }
         
@@ -375,11 +420,11 @@ public class ReportService : IReportService
         {
             Id = log.Id,
             UsuarioNome = log.Usuario?.Nome ?? "Sistema",
-            TipoAcao = log.TipoAcao.ToString(),
+            TipoAcao = log.TipoAtividade.ToString(),
             Descricao = log.Descricao,
-            DadosAnteriores = ParseJsonToDictionary(log.DadosAnteriores),
-            DadosNovos = ParseJsonToDictionary(log.DadosNovos),
-            EnderecoIp = log.EnderecoIp,
+            DadosAnteriores = log.DadosAnteriores,
+            DadosNovos = log.DadosNovos,
+            EnderecoIp = log.EnderecoIp?.ToString(),
             UserAgent = log.UserAgent,
             CriadoEm = log.CriadoEm,
             CursoNome = log.Curso?.Nome,
@@ -387,20 +432,6 @@ public class ReportService : IReportService
         };
     }
 
-    private Dictionary<string, object>? ParseJsonToDictionary(string? json)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-            return null;
-
-        try
-        {
-            return JsonSerializer.Deserialize<Dictionary<string, object>>(json);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     private string FormatFileSize(long bytes)
     {

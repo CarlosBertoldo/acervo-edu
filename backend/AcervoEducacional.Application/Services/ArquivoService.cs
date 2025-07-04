@@ -54,16 +54,16 @@ public class ArquivoService : IArquivoService
             var arquivo = await _arquivoRepository.GetByIdAsync(id);
             if (arquivo == null)
             {
-                return ApiResponse<ArquivoResponseDto>.Error("Arquivo não encontrado");
+                return ApiResponse<ArquivoResponseDto>.ErrorResult("Arquivo não encontrado");
             }
 
             var response = await MapToResponseDto(arquivo);
-            return ApiResponse<ArquivoResponseDto>.Success(response);
+            return ApiResponse<ArquivoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar arquivo {Id}", id);
-            return ApiResponse<ArquivoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<ArquivoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -85,12 +85,12 @@ public class ArquivoService : IArquivoService
                 })
                 .ToList();
 
-            return ApiResponse<List<ArquivosPorCategoriaDto>>.Success(arquivosPorCategoria);
+            return ApiResponse<List<ArquivosPorCategoriaDto>>.SuccessResult(arquivosPorCategoria);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar arquivos do curso {CursoId}", cursoId);
-            return ApiResponse<List<ArquivosPorCategoriaDto>>.Error("Erro interno do servidor");
+            return ApiResponse<List<ArquivosPorCategoriaDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -116,21 +116,18 @@ public class ArquivoService : IArquivoService
 
             var arquivosDto = arquivos.Select(MapToListDto).ToList();
             
-            var pagedResponse = new PagedResponse<ArquivoListDto>
-            {
-                Data = arquivosDto,
-                Page = filter.Page,
-                PageSize = filter.PageSize,
-                TotalCount = total,
-                TotalPages = (int)Math.Ceiling((double)total / filter.PageSize)
-            };
+            var pagedResponse = new PagedResponse<ArquivoListDto>(
+                arquivosDto,
+                total,
+                filter.Page,
+                filter.PageSize);
 
-            return ApiResponse<PagedResponse<ArquivoListDto>>.Success(pagedResponse);
+            return ApiResponse<PagedResponse<ArquivoListDto>>.SuccessResult(pagedResponse);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao buscar arquivos com filtros");
-            return ApiResponse<PagedResponse<ArquivoListDto>>.Error("Erro interno do servidor");
+            return ApiResponse<PagedResponse<ArquivoListDto>>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -142,14 +139,14 @@ public class ArquivoService : IArquivoService
             var curso = await _cursoRepository.GetByIdAsync(cursoId);
             if (curso == null)
             {
-                return ApiResponse<ArquivoResponseDto>.Error("Curso não encontrado");
+                return ApiResponse<ArquivoResponseDto>.ErrorResult("Curso não encontrado");
             }
 
             // Validação avançada do arquivo
             var validationResult = await _fileValidationService.ValidateFileAsync(dto.Arquivo);
             if (!validationResult.IsValid)
             {
-                return ApiResponse<ArquivoResponseDto>.Error(validationResult.ErrorMessage);
+                return ApiResponse<ArquivoResponseDto>.ErrorResult(validationResult.ErrorMessage);
             }
 
             // Calcular hash SHA256 para detectar duplicatas
@@ -159,7 +156,7 @@ public class ArquivoService : IArquivoService
             if (existingFile != null)
             {
                 _logger.LogWarning("Tentativa de upload de arquivo duplicado. Hash: {Hash}", fileHash);
-                return ApiResponse<ArquivoResponseDto>.Error("Arquivo já existe no sistema");
+                return ApiResponse<ArquivoResponseDto>.ErrorResult("Arquivo já existe no sistema");
             }
 
             // Gerar nome único com GUID
@@ -186,10 +183,10 @@ public class ArquivoService : IArquivoService
                 UrlS3 = s3Url,
                 IsPublico = dto.IsPublico,
                 DataExpiracao = dto.DataExpiracao,
-                DominiosPermitidos = dto.DominiosPermitidos,
+                DominiosPermitidos = dto.DominiosPermitidos != null ? string.Join(",", dto.DominiosPermitidos) : null,
                 BloqueiosAtivos = dto.BloqueiosAtivos ?? new Dictionary<string, object>(),
                 Metadados = CreateMetadata(dto.Arquivo, fileHash),
-                CriadoPor = criadoPor,
+                CriadoPor = criadoPor.ToString(),
                 CriadoEm = DateTime.UtcNow
             };
 
@@ -200,12 +197,12 @@ public class ArquivoService : IArquivoService
                 arquivo.Nome, cursoId);
 
             var response = await MapToResponseDto(arquivo);
-            return ApiResponse<ArquivoResponseDto>.Success(response);
+            return ApiResponse<ArquivoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao fazer upload do arquivo para o curso {CursoId}", cursoId);
-            return ApiResponse<ArquivoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<ArquivoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -216,7 +213,7 @@ public class ArquivoService : IArquivoService
             var arquivo = await _arquivoRepository.GetByIdAsync(id);
             if (arquivo == null)
             {
-                return ApiResponse<ArquivoResponseDto>.Error("Arquivo não encontrado");
+                return ApiResponse<ArquivoResponseDto>.ErrorResult("Arquivo não encontrado");
             }
 
             // Atualizar propriedades
@@ -224,10 +221,10 @@ public class ArquivoService : IArquivoService
             arquivo.Categoria = dto.Categoria;
             arquivo.IsPublico = dto.IsPublico;
             arquivo.DataExpiracao = dto.DataExpiracao;
-            arquivo.DominiosPermitidos = dto.DominiosPermitidos;
+            arquivo.DominiosPermitidos = dto.DominiosPermitidos != null ? string.Join(",", dto.DominiosPermitidos) : null;
             arquivo.BloqueiosAtivos = dto.BloqueiosAtivos ?? new Dictionary<string, object>();
             arquivo.Metadados = dto.Metadados ?? arquivo.Metadados;
-            arquivo.AtualizadoPor = atualizadoPor;
+            arquivo.AtualizadoPor = atualizadoPor.ToString();
             arquivo.AtualizadoEm = DateTime.UtcNow;
 
             await _arquivoRepository.UpdateAsync(arquivo);
@@ -235,12 +232,12 @@ public class ArquivoService : IArquivoService
             _logger.LogInformation("Arquivo {Id} atualizado com sucesso", id);
 
             var response = await MapToResponseDto(arquivo);
-            return ApiResponse<ArquivoResponseDto>.Success(response);
+            return ApiResponse<ArquivoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao atualizar arquivo {Id}", id);
-            return ApiResponse<ArquivoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<ArquivoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -251,7 +248,7 @@ public class ArquivoService : IArquivoService
             var arquivo = await _arquivoRepository.GetByIdAsync(id);
             if (arquivo == null)
             {
-                return ApiResponse<bool>.Error("Arquivo não encontrado");
+                return ApiResponse<bool>.ErrorResult("Arquivo não encontrado");
             }
 
             // Deletar do S3
@@ -259,18 +256,18 @@ public class ArquivoService : IArquivoService
             await _s3Service.DeleteFileAsync(s3Key);
 
             // Soft delete no banco
-            arquivo.DeletadoPor = deletadoPor;
+            arquivo.DeletadoPor = deletadoPor.ToString();
             arquivo.DeletadoEm = DateTime.UtcNow;
             await _arquivoRepository.UpdateAsync(arquivo);
 
             _logger.LogInformation("Arquivo {Id} deletado com sucesso", id);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.SuccessResult(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao deletar arquivo {Id}", id);
-            return ApiResponse<bool>.Error("Erro interno do servidor");
+            return ApiResponse<bool>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -281,18 +278,18 @@ public class ArquivoService : IArquivoService
             var arquivo = await _arquivoRepository.GetByIdAsync(id);
             if (arquivo == null)
             {
-                return ApiResponse<DownloadArquivoResponseDto>.Error("Arquivo não encontrado");
+                return ApiResponse<DownloadArquivoResponseDto>.ErrorResult("Arquivo não encontrado");
             }
 
             // Verificar permissões e expiração
             if (!arquivo.IsPublico && !await HasPermissionToAccess(arquivo, usuarioId))
             {
-                return ApiResponse<DownloadArquivoResponseDto>.Error("Acesso negado");
+                return ApiResponse<DownloadArquivoResponseDto>.ErrorResult("Acesso negado");
             }
 
             if (arquivo.DataExpiracao.HasValue && arquivo.DataExpiracao.Value < DateTime.UtcNow)
             {
-                return ApiResponse<DownloadArquivoResponseDto>.Error("Arquivo expirado");
+                return ApiResponse<DownloadArquivoResponseDto>.ErrorResult("Arquivo expirado");
             }
 
             // Gerar URL pré-assinada (1 hora de validade)
@@ -311,12 +308,12 @@ public class ArquivoService : IArquivoService
                 TipoMime = arquivo.TipoMime
             };
 
-            return ApiResponse<DownloadArquivoResponseDto>.Success(response);
+            return ApiResponse<DownloadArquivoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao gerar URL de download para arquivo {Id}", id);
-            return ApiResponse<DownloadArquivoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<DownloadArquivoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -327,15 +324,15 @@ public class ArquivoService : IArquivoService
             var arquivo = await _arquivoRepository.GetByIdAsync(id);
             if (arquivo == null)
             {
-                return ApiResponse<ShareArquivoResponseDto>.Error("Arquivo não encontrado");
+                return ApiResponse<ShareArquivoResponseDto>.ErrorResult("Arquivo não encontrado");
             }
 
             // Atualizar configurações de compartilhamento
             arquivo.IsPublico = dto.IsPublico;
             arquivo.DataExpiracao = dto.DataExpiracao;
-            arquivo.DominiosPermitidos = dto.DominiosPermitidos;
+            arquivo.DominiosPermitidos = dto.DominiosPermitidos != null ? string.Join(",", dto.DominiosPermitidos) : null;
             arquivo.BloqueiosAtivos = dto.BloqueiosAtivos ?? new Dictionary<string, object>();
-            arquivo.AtualizadoPor = usuarioId;
+            arquivo.AtualizadoPor = usuarioId.ToString();
             arquivo.AtualizadoEm = DateTime.UtcNow;
 
             await _arquivoRepository.UpdateAsync(arquivo);
@@ -368,12 +365,12 @@ public class ArquivoService : IArquivoService
 
             _logger.LogInformation("Arquivo {Id} compartilhado com sucesso", id);
 
-            return ApiResponse<ShareArquivoResponseDto>.Success(response);
+            return ApiResponse<ShareArquivoResponseDto>.SuccessResult(response);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro ao compartilhar arquivo {Id}", id);
-            return ApiResponse<ShareArquivoResponseDto>.Error("Erro interno do servidor");
+            return ApiResponse<ShareArquivoResponseDto>.ErrorResult("Erro interno do servidor");
         }
     }
 
@@ -412,7 +409,7 @@ public class ArquivoService : IArquivoService
             TamanhoFormatado = FormatFileSize(arquivo.Tamanho),
             IsPublico = arquivo.IsPublico,
             DataExpiracao = arquivo.DataExpiracao,
-            DominiosPermitidos = arquivo.DominiosPermitidos,
+            DominiosPermitidos = !string.IsNullOrEmpty(arquivo.DominiosPermitidos) ? arquivo.DominiosPermitidos.Split(',') : null,
             BloqueiosAtivos = arquivo.BloqueiosAtivos,
             Metadados = arquivo.Metadados,
             CriadoEm = arquivo.CriadoEm,

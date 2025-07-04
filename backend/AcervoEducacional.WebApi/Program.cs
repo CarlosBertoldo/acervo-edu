@@ -1,53 +1,14 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Text;
-using AcervoEducacional.Infrastructure.Data;
-using AcervoEducacional.Application.Interfaces;
-using AcervoEducacional.Infrastructure.Services;
-using AcervoEducacional.Domain.Interfaces;
-using AcervoEducacional.Infrastructure.Repositories;
-using Hangfire;
-using Hangfire.PostgreSql;
-using Serilog;
-using AspNetCoreRateLimit;
-using AcervoEducacional.WebApi.Middleware;
-using AcervoEducacional.WebApi.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configurar Serilog
-Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/acervo-.txt", rollingInterval: RollingInterval.Day)
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-
-// Configurar serviço de credenciais seguras
-builder.Services.AddCredentialsService();
-
-// Add services to the container.
-builder.Services.AddControllers()
-    .AddNewtonsoftJson(options =>
-    {
-        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
-    });
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Configurar Entity Framework com credenciais seguras
-builder.Services.AddDbContext<AcervoEducacionalContext>((serviceProvider, options) =>
-{
-    var credentialsService = serviceProvider.GetRequiredService<ICredentialsService>();
-    var connectionString = credentialsService.GetDatabaseConnectionString();
-    options.UseNpgsql(connectionString);
-});
-
-// Configurar JWT com credenciais seguras
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+// ========== CONFIGURAÇÃO DA AUTENTICAÇÃO JWT ==========
+var jwtKey = builder.Configuration["JWT:SecretKey"] ?? "AcervoEducacional2024!@#$%^&*()_+SecretKeyForProduction";
+var jwtIssuer = builder.Configuration["JWT:Issuer"] ?? "AcervoEducacional";
+var jwtAudience = builder.Configuration["JWT:Audience"] ?? "AcervoEducacionalUsers";
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -58,139 +19,166 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                builder.Services.BuildServiceProvider().GetRequiredService<ICredentialsService>().GetJwtSecretKey()
-            )),
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero
         };
     });
 
 builder.Services.AddAuthorization();
 
-// Configurar AutoMapper
-builder.Services.AddAutoMapper(typeof(Program));
+// ========== CONFIGURAÇÃO BÁSICA DOS SERVIÇOS ==========
 
-// Configurar CORS com base nas flags de segurança
+// ========== CONFIGURAÇÃO DO CORS ==========
 builder.Services.AddCors(options =>
 {
-    var enableStrictCors = builder.Configuration.GetValue<bool>("Security:EnableStrictCors", false);
-    
-    if (enableStrictCors)
+    options.AddPolicy("DefaultPolicy", policy =>
     {
-        // CORS restrito para produção
-        var allowedOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS")?.Split(',') 
-            ?? new[] { "https://acervo.ferreiracosta.com", "https://app.ferreiracosta.com" };
-            
-        options.AddPolicy("Production", policy =>
-        {
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        });
-        
-        // Log da configuração
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("🔒 CORS RESTRITO ativado para domínios: {Origins}", string.Join(", ", allowedOrigins));
-    }
-    else
-    {
-        // CORS permissivo para desenvolvimento
-        options.AddPolicy("Development", policy =>
+        if (builder.Environment.IsDevelopment())
         {
             policy.AllowAnyOrigin()
                   .AllowAnyMethod()
                   .AllowAnyHeader();
-        });
-        
-        // Log da configuração
-        var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("🛠️ CORS PERMISSIVO ativado para desenvolvimento");
-    }
+        }
+        else
+        {
+            policy.WithOrigins(
+                      "https://acervo.ferreiracosta.com",
+                      "https://www.ferreiracosta.com"
+                  )
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+    });
 });
 
-// Configurar Rate Limiting
-builder.Services.AddMemoryCache();
-builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
-builder.Services.Configure<IpRateLimitPolicies>(builder.Configuration.GetSection("IpRateLimitPolicies"));
-builder.Services.AddInMemoryRateLimiting();
-builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+// ========== CONFIGURAÇÃO DO MVC ==========
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore;
+        options.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
+    });
 
-// Configurar Hangfire
-builder.Services.AddHangfire(configuration => configuration
-    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-    .UseSimpleAssemblyNameTypeSerializer()
-    .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddHangfireServer();
-
-// Registrar serviços
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICursoService, CursoService>();
-builder.Services.AddScoped<IArquivoService, ArquivoService>();
-builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IFileStorageService, AwsS3Service>();
-
-// Registrar repositórios
-builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
-builder.Services.AddScoped<ICursoRepository, CursoRepository>();
-builder.Services.AddScoped<IArquivoRepository, ArquivoRepository>();
-builder.Services.AddScoped<ILogAtividadeRepository, LogAtividadeRepository>();
-builder.Services.AddScoped<ISessaoUsuarioRepository, SessaoUsuarioRepository>();
-builder.Services.AddScoped<ITokenRecuperacaoRepository, TokenRecuperacaoRepository>();
-builder.Services.AddScoped<IConfiguracaoSistemaRepository, ConfiguracaoSistemaRepository>();
+// ========== CONFIGURAÇÃO DO SWAGGER ==========
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "Acervo Educacional API", 
+        Version = "v1.0.0",
+        Description = "Sistema de Acervo Educacional Ferreira Costa - API REST completa para gestão de cursos e arquivos educacionais",
+        Contact = new OpenApiContact
+        {
+            Name = "Ferreira Costa",
+            Url = new Uri("https://www.ferreiracosta.com")
+        }
+    });
+    
+    // Configuração de autenticação JWT para Swagger
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Exemplo: 'Bearer {token}'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+    
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ========== VERSÃO SIMPLIFICADA SEM BANCO ==========
+
+// ========== CONFIGURAÇÃO DO PIPELINE HTTP ==========
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-// Aplicar Headers de Segurança
-app.UseSecurityHeaders();
-
-// Aplicar CORS baseado na configuração de segurança
-var enableStrictCors = app.Configuration.GetValue<bool>("Security:EnableStrictCors", false);
-if (enableStrictCors)
-{
-    app.UseCors("Production");
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Acervo Educacional API v1");
+        c.RoutePrefix = "swagger";
+        c.DisplayRequestDuration();
+        c.EnableDeepLinking();
+    });
 }
 else
 {
-    app.UseCors("Development");
+    app.UseExceptionHandler("/Error");
+    app.UseHsts();
 }
 
-// Aplicar Rate Limiting
-app.UseIpRateLimiting();
+// Rate Limiting básico (removido por simplicidade)
 
+// CORS
+app.UseCors("DefaultPolicy");
+
+// Security Headers
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
+});
+
+// Authentication & Authorization
 app.UseAuthentication();
-
-// Aplicar proteção BOLA (ativada apenas em produção via flag)
-app.UseObjectLevelAuthorization();
-
 app.UseAuthorization();
 
-app.UseHangfireDashboard("/hangfire");
-
+// Controllers
 app.MapControllers();
 
-// Aplicar migrations automaticamente em desenvolvimento
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<AcervoEducacionalContext>();
-    context.Database.Migrate();
-}
+// Hangfire removido por simplicidade
 
-app.Run();
+// Health Check
+app.MapGet("/health", () => new { 
+    Status = "Healthy", 
+    DateTime = DateTime.UtcNow,
+    Environment = app.Environment.EnvironmentName,
+    Version = "1.0.0"
+}).WithName("HealthCheck").WithTags("Health");
 
+// Root endpoint
+app.MapGet("/", () => new {
+    Message = "🚀 Sistema Acervo Educacional Ferreira Costa - API REST",
+    Version = "1.0.0",
+    Environment = app.Environment.EnvironmentName,
+    Documentation = "/swagger"
+}).WithName("Root").WithTags("Info");
+
+// ========== INICIALIZAÇÃO ==========
+var port = builder.Configuration["ASPNETCORE_URLS"]?.Split(':').LastOrDefault()?.TrimEnd('/') ?? "5000";
+
+Console.WriteLine("🚀 Sistema Acervo Educacional Ferreira Costa");
+Console.WriteLine("===============================================");
+Console.WriteLine($"🌐 API: http://localhost:{port}");
+Console.WriteLine($"📖 Swagger: http://localhost:{port}/swagger");
+// Hangfire removido da versão simplificada
+Console.WriteLine($"🏥 Health: http://localhost:{port}/health");
+Console.WriteLine($"🎯 Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine("===============================================");
+
+app.Run("http://0.0.0.0:5105");

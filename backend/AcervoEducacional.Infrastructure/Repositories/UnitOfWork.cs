@@ -14,6 +14,8 @@ public class UnitOfWork : IUnitOfWork
     private IArquivoRepository? _arquivoRepository;
     private ILogAtividadeRepository? _logAtividadeRepository;
     private IConfiguracaoSistemaRepository? _configuracaoSistemaRepository;
+    private ISessaoUsuarioRepository? _sessaoUsuarioRepository;
+    private ITokenRecuperacaoRepository? _tokenRecuperacaoRepository;
 
     public UnitOfWork(AcervoEducacionalContext context)
     {
@@ -62,6 +64,32 @@ public class UnitOfWork : IUnitOfWork
         {
             _configuracaoSistemaRepository ??= new ConfiguracaoSistemaRepository(_context);
             return _configuracaoSistemaRepository;
+        }
+    }
+
+    public IConfiguracaoSistemaRepository ConfiguracoesSistema => ConfiguracaoSistemaRepository;
+
+    // Aliases para compatibilidade com interfaces
+    public IUsuarioRepository Usuarios => UsuarioRepository;
+    public ICursoRepository Cursos => CursoRepository;
+    public IArquivoRepository Arquivos => ArquivoRepository;
+    public ILogAtividadeRepository LogsAtividade => LogAtividadeRepository;
+
+    public ISessaoUsuarioRepository SessoesUsuario
+    {
+        get
+        {
+            _sessaoUsuarioRepository ??= new SessaoUsuarioRepository(_context);
+            return _sessaoUsuarioRepository;
+        }
+    }
+
+    public ITokenRecuperacaoRepository TokensRecuperacao
+    {
+        get
+        {
+            _tokenRecuperacaoRepository ??= new TokenRecuperacaoRepository(_context);
+            return _tokenRecuperacaoRepository;
         }
     }
 

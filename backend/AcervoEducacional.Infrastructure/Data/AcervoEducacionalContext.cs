@@ -172,8 +172,8 @@ public class AcervoEducacionalContext : DbContext
                 Status = StatusUsuario.Ativo,
                 Departamento = "TI",
                 Cargo = "Administrador do Sistema",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
             }
         );
 
@@ -187,8 +187,8 @@ public class AcervoEducacionalContext : DbContext
                 Valor = "Sistema Acervo Educacional",
                 Descricao = "Nome do sistema",
                 Tipo = TipoConfiguracao.Texto,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
             },
             new ConfiguracaoSistema
             {
@@ -197,8 +197,8 @@ public class AcervoEducacionalContext : DbContext
                 Valor = "1.0.0",
                 Descricao = "Versão do sistema",
                 Tipo = TipoConfiguracao.Texto,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
             },
             new ConfiguracaoSistema
             {
@@ -207,8 +207,8 @@ public class AcervoEducacionalContext : DbContext
                 Valor = "AcervoEducacional2024!@#$%^&*()_+SecretKey",
                 Descricao = "Chave secreta para JWT",
                 Tipo = TipoConfiguracao.Senha,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
             },
             new ConfiguracaoSistema
             {
@@ -217,8 +217,8 @@ public class AcervoEducacionalContext : DbContext
                 Valor = "24",
                 Descricao = "Tempo de expiração do JWT em horas",
                 Tipo = TipoConfiguracao.Numero,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                CriadoEm = DateTime.UtcNow,
+                AtualizadoEm = DateTime.UtcNow
             }
         );
     }
