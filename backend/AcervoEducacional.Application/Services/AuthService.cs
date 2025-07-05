@@ -405,7 +405,7 @@ public class AuthService : IAuthService
             new(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
             new(ClaimTypes.Name, usuario.Nome),
             new(ClaimTypes.Email, usuario.Email),
-            new("tipo_usuario", usuario.TipoUsuario.ToString()),
+            new("tipo_usuario", usuario.Tipo.ToString()),
             new("status", usuario.Status.ToString())
         };
 
@@ -502,7 +502,7 @@ public class AuthService : IAuthService
             Id = usuario.Id,
             Nome = usuario.Nome,
             Email = usuario.Email,
-            TipoUsuario = usuario.TipoUsuario.ToString(),
+            TipoUsuario = usuario.Tipo.ToString(),
             Status = usuario.Status.ToString(),
             UltimoLogin = usuario.UltimoLogin,
             CriadoEm = usuario.CriadoEm

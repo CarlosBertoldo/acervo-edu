@@ -5,7 +5,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class UnitOfWork : IUnitOfWork
 {
-    private readonly AcervoEducacionalContext _context;
+    private readonly SimpleDbContext _context;
     private bool _disposed = false;
 
     // Repositórios
@@ -17,7 +17,7 @@ public class UnitOfWork : IUnitOfWork
     private ISessaoUsuarioRepository? _sessaoUsuarioRepository;
     private ITokenRecuperacaoRepository? _tokenRecuperacaoRepository;
 
-    public UnitOfWork(AcervoEducacionalContext context)
+    public UnitOfWork(SimpleDbContext context)
     {
         _context = context;
     }

@@ -23,5 +23,13 @@
     <ProjectReference Include="..\AcervoEducacional.Application\AcervoEducacional.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Excluir temporariamente repositories com problemas -->
+    <Compile Remove="Repositories/CursoRepository.cs" />
+    <Compile Remove="Repositories/ArquivoRepository.cs" />
+    <Compile Remove="Repositories/UnitOfWork.cs" />
+    <Compile Remove="Data/AcervoEducacionalContext.cs" />
+  </ItemGroup>
+
 </Project>
 

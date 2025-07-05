@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class TokenRecuperacaoRepository : BaseRepository<TokenRecuperacao>, ITokenRecuperacaoRepository
 {
-    public TokenRecuperacaoRepository(AcervoEducacionalContext context) : base(context)
+    public TokenRecuperacaoRepository(SimpleDbContext context) : base(context)
     {
     }
 

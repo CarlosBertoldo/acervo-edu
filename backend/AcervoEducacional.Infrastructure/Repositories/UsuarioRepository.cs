@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
 {
-    public UsuarioRepository(AcervoEducacionalContext context) : base(context)
+    public UsuarioRepository(SimpleDbContext context) : base(context)
     {
     }
 
@@ -62,7 +62,7 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
 
         if (tipoUsuario.HasValue)
         {
-            query = query.Where(u => u.TipoUsuario == tipoUsuario.Value);
+            query = query.Where(u => u.Tipo == tipoUsuario.Value);
         }
 
         if (status.HasValue)
@@ -117,7 +117,7 @@ public class UsuarioRepository : BaseRepository<Usuario>, IUsuarioRepository
 
     public async Task<int> CountActiveAdminsAsync()
     {
-        return await _dbSet.CountAsync(u => (u.TipoUsuario == Domain.Enums.TipoUsuario.Admin || u.TipoUsuario == Domain.Enums.TipoUsuario.Administrador) && 
+        return await _dbSet.CountAsync(u => u.Tipo == Domain.Enums.TipoUsuario.Administrador && 
                                           u.Status == Domain.Enums.StatusUsuario.Ativo && 
                                           u.DeletadoEm == null);
     }

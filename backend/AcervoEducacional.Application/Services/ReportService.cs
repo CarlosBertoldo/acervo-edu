@@ -124,7 +124,7 @@ public class ReportService : IReportService
                 cursosQuery = cursosQuery.Where(c => 
                     c.Nome.ToLower().Contains(searchLower) ||
                     (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(searchLower)) ||
-                    c.CodigoCurso.ToLower().Contains(searchLower));
+                    c.Codigo.ToLower().Contains(searchLower));
             }
 
             if (filter.Status.HasValue)
@@ -284,7 +284,7 @@ public class ReportService : IReportService
         // Dados
         foreach (var curso in cursos)
         {
-            csv.AppendLine($"\"{curso.CodigoCurso}\",\"{curso.Nome}\",\"{curso.DescricaoAcademia}\"," +
+            csv.AppendLine($"\"{curso.Codigo}\",\"{curso.Nome}\",\"{curso.DescricaoAcademia}\"," +
                           $"\"{curso.Status}\",\"{curso.TipoAmbiente}\",\"{curso.TipoAcesso}\"," +
                           $"\"{curso.DataInicioOperacao?.ToString("dd/MM/yyyy")}\",\"{curso.Origem}\"," +
                           $"\"{curso.CriadoEm:dd/MM/yyyy HH:mm}\"");
@@ -366,7 +366,7 @@ public class ReportService : IReportService
         
         foreach (var curso in cursos)
         {
-            html.AppendLine($"<tr><td>{curso.CodigoCurso}</td><td>{curso.Nome}</td>" +
+            html.AppendLine($"<tr><td>{curso.Codigo}</td><td>{curso.Nome}</td>" +
                            $"<td>{curso.DescricaoAcademia}</td><td>{curso.Status}</td><td>{curso.Origem}</td></tr>");
         }
         

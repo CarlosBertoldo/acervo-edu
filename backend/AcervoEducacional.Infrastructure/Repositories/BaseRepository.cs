@@ -8,10 +8,10 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 {
-    protected readonly AcervoEducacionalContext _context;
+    protected readonly SimpleDbContext _context;
     protected readonly DbSet<T> _dbSet;
 
-    public BaseRepository(AcervoEducacionalContext context)
+    public BaseRepository(SimpleDbContext context)
     {
         _context = context;
         _dbSet = context.Set<T>();

@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class ConfiguracaoSistemaRepository : BaseRepository<ConfiguracaoSistema>, IConfiguracaoSistemaRepository
 {
-    public ConfiguracaoSistemaRepository(AcervoEducacionalContext context) : base(context)
+    public ConfiguracaoSistemaRepository(SimpleDbContext context) : base(context)
     {
     }
 

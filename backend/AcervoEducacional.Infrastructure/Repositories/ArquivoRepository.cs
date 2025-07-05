@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class ArquivoRepository : BaseRepository<Arquivo>, IArquivoRepository
 {
-    public ArquivoRepository(AcervoEducacionalContext context) : base(context)
+    public ArquivoRepository(SimpleDbContext context) : base(context)
     {
     }
 

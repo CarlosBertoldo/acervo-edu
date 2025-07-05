@@ -4,24 +4,23 @@ using Microsoft.AspNetCore.Authorization;
 namespace AcervoEducacional.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
+[Produces("application/json")]
 [Authorize]
 public class CursoController : ControllerBase
 {
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
+    private readonly ILogger<CursoController> _logger;
+
+    public CursoController(ILogger<CursoController> logger)
     {
-        await Task.Delay(1); // Simular async
-        
-        return Ok(new { 
-            data = new[] { 
-                new { Id = 1, Nome = "Curso de Gestão", Status = "Ativo", Codigo = "CGT001" },
-                new { Id = 2, Nome = "Curso de Liderança", Status = "Backlog", Codigo = "CLD002" }
-            },
-            totalCount = 2 
-        });
+        _logger = logger;
     }
 
+    /// <summary>
+    /// Obter curso por ID - Temporário com dados mock
+    /// </summary>
+    /// <param name="id">ID do curso</param>
+    /// <returns>Dados completos do curso</returns>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -36,6 +35,29 @@ public class CursoController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Listar cursos - Temporário com dados mock
+    /// </summary>
+    /// <returns>Lista de cursos</returns>
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        await Task.Delay(1); // Simular async
+        
+        return Ok(new { 
+            data = new[] { 
+                new { Id = 1, Nome = "Curso de Gestão", Status = "Ativo", Codigo = "CGT001" },
+                new { Id = 2, Nome = "Curso de Liderança", Status = "Backlog", Codigo = "CLD002" }
+            },
+            totalCount = 2 
+        });
+    }
+
+    /// <summary>
+    /// Criar novo curso - Temporário com dados mock
+    /// </summary>
+    /// <param name="dto">Dados do curso a ser criado</param>
+    /// <returns>Curso criado</returns>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] object dto)
     {

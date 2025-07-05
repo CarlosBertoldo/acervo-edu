@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class SessaoUsuarioRepository : BaseRepository<SessaoUsuario>, ISessaoUsuarioRepository
 {
-    public SessaoUsuarioRepository(AcervoEducacionalContext context) : base(context)
+    public SessaoUsuarioRepository(SimpleDbContext context) : base(context)
     {
     }
 

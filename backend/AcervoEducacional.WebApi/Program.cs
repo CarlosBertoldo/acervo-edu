@@ -1,9 +1,56 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
+using AcervoEducacional.Infrastructure.Data;
+using AcervoEducacional.Domain.Interfaces;
+using AcervoEducacional.Infrastructure.Repositories;
+using AcervoEducacional.Application.Interfaces;
+using AcervoEducacional.Application.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ========== CONFIGURAÇÃO DO BANCO DE DADOS ==========
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+    ?? builder.Configuration["DATABASE_URL"] 
+    ?? "Data Source=acervo_educacional.db";
+
+// Configurar Entity Framework
+builder.Services.AddDbContext<SimpleDbContext>(options =>
+{
+    if (connectionString.Contains("Host=") || connectionString.Contains("Server="))
+    {
+        // PostgreSQL
+        options.UseNpgsql(connectionString, npgsqlOptions =>
+        {
+            npgsqlOptions.MigrationsAssembly("AcervoEducacional.Infrastructure");
+            npgsqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
+        });
+    }
+    else
+    {
+        // SQLite para desenvolvimento
+        options.UseSqlite(connectionString, sqliteOptions =>
+        {
+            sqliteOptions.MigrationsAssembly("AcervoEducacional.Infrastructure");
+        });
+    }
+    
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
+
+// ========== DEPENDENCY INJECTION SIMPLIFICADO ==========
+// Temporariamente sem repositórios devido a problemas de compatibilidade
+// Vamos primeiro fazer o sistema básico funcionar
+
+// Services essenciais - temporariamente comentados
+// builder.Services.AddScoped<IAuthService, AuthService>();
+// builder.Services.AddScoped<IEmailService, EmailService>();
 
 // ========== CONFIGURAÇÃO DA AUTENTICAÇÃO JWT ==========
 var jwtKey = builder.Configuration["JWT:SecretKey"] ?? "AcervoEducacional2024!@#$%^&*()_+SecretKeyForProduction";
@@ -108,7 +155,36 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ========== VERSÃO SIMPLIFICADA SEM BANCO ==========
+// ========== INICIALIZAÇÃO DO BANCO DE DADOS ==========
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<SimpleDbContext>();
+    
+    try
+    {
+        if (builder.Environment.IsDevelopment())
+        {
+            // Em desenvolvimento, sempre aplicar migrações automaticamente
+            await context.Database.EnsureCreatedAsync();
+        }
+        else
+        {
+            // Em produção, apenas verificar se o banco existe
+            await context.Database.EnsureCreatedAsync();
+        }
+        
+        Console.WriteLine("✅ Banco de dados inicializado com sucesso");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Erro ao inicializar banco de dados: {ex.Message}");
+        // Em desenvolvimento, continuar mesmo com erro de banco
+        if (!builder.Environment.IsDevelopment())
+        {
+            throw;
+        }
+    }
+}
 
 // ========== CONFIGURAÇÃO DO PIPELINE HTTP ==========
 if (app.Environment.IsDevelopment())

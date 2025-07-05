@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class LogAtividadeRepository : BaseRepository<LogAtividade>, ILogAtividadeRepository
 {
-    public LogAtividadeRepository(AcervoEducacionalContext context) : base(context)
+    public LogAtividadeRepository(SimpleDbContext context) : base(context)
     {
     }
 

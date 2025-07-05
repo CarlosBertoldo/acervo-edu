@@ -7,7 +7,7 @@ namespace AcervoEducacional.Infrastructure.Repositories;
 
 public class CursoRepository : BaseRepository<Curso>, ICursoRepository
 {
-    public CursoRepository(AcervoEducacionalContext context) : base(context)
+    public CursoRepository(SimpleDbContext context) : base(context)
     {
     }
 
@@ -16,12 +16,12 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         return await _dbSet
             .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
-            .FirstOrDefaultAsync(c => c.CodigoCurso.ToLower() == codigo.ToLower());
+            .FirstOrDefaultAsync(c => c.Codigo.ToLower() == codigo.ToLower());
     }
 
     public async Task<bool> CodigoExistsAsync(string codigo, int? excludeId = null)
     {
-        var query = _dbSet.Where(c => c.CodigoCurso.ToLower() == codigo.ToLower());
+        var query = _dbSet.Where(c => c.Codigo.ToLower() == codigo.ToLower());
         
         if (excludeId.HasValue)
         {
@@ -33,7 +33,7 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
 
     public async Task<bool> CodigoExistsAsync(string codigo)
     {
-        return await _dbSet.AnyAsync(c => c.CodigoCurso.ToLower() == codigo.ToLower());
+        return await _dbSet.AnyAsync(c => c.Codigo.ToLower() == codigo.ToLower());
     }
 
     public async Task<IEnumerable<Curso>> GetByStatusAsync(Domain.Enums.StatusCurso status)
@@ -83,7 +83,7 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
             .Include(c => c.UsuarioCriador)
             .Include(c => c.Arquivos)
             .Where(c => c.NomeCurso.ToLower().Contains(term) ||
-                       c.CodigoCurso.ToLower().Contains(term) ||
+                       c.Codigo.ToLower().Contains(term) ||
                        (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(term)) ||
                        (c.UsuarioCriador != null && c.UsuarioCriador.Nome.ToLower().Contains(term)))
             .OrderBy(c => c.NomeCurso)
@@ -109,7 +109,7 @@ public class CursoRepository : BaseRepository<Curso>, ICursoRepository
         {
             var term = searchTerm.ToLower();
             query = query.Where(c => c.NomeCurso.ToLower().Contains(term) ||
-                               c.CodigoCurso.ToLower().Contains(term) ||
+                               c.Codigo.ToLower().Contains(term) ||
                                (c.DescricaoAcademia != null && c.DescricaoAcademia.ToLower().Contains(term)) ||
                                (c.UsuarioCriador != null && c.UsuarioCriador.Nome.ToLower().Contains(term)));
         }
