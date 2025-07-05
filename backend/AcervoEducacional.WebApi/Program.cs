@@ -3,11 +3,15 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using Hangfire;
+using Hangfire.PostgreSql;
+using Hangfire.InMemory;
 using AcervoEducacional.Infrastructure.Data;
 using AcervoEducacional.Domain.Interfaces;
 using AcervoEducacional.Infrastructure.Repositories;
 using AcervoEducacional.Application.Interfaces;
 using AcervoEducacional.Application.Services;
+using AcervoEducacional.WebApi.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,13 +48,55 @@ builder.Services.AddDbContext<SimpleDbContext>(options =>
     }
 });
 
-// ========== DEPENDENCY INJECTION SIMPLIFICADO ==========
-// Temporariamente sem repositórios devido a problemas de compatibilidade
-// Vamos primeiro fazer o sistema básico funcionar
+// ========== CONFIGURAÇÃO DO HANGFIRE ==========
+// Configurar Hangfire com PostgreSQL para produção ou in-memory para desenvolvimento
+if (connectionString.Contains("Host=") || connectionString.Contains("Server="))
+{
+    // PostgreSQL para produção
+    builder.Services.AddHangfire(configuration => configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString), new PostgreSqlStorageOptions
+        {
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            JobExpirationCheckInterval = TimeSpan.FromHours(1),
+            CountersAggregateInterval = TimeSpan.FromMinutes(5),
+            PrepareSchemaIfNecessary = true,
+            TransactionSynchronisationTimeout = TimeSpan.FromMinutes(5),
+            SchemaName = "hangfire"
+        }));
+}
+else
+{
+    // In-Memory para desenvolvimento
+    builder.Services.AddHangfire(configuration => configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseInMemoryStorage());
+}
 
-// Services essenciais - temporariamente comentados
-// builder.Services.AddScoped<IAuthService, AuthService>();
-// builder.Services.AddScoped<IEmailService, EmailService>();
+// Configurar Hangfire Server
+builder.Services.AddHangfireServer(options =>
+{
+    options.WorkerCount = Environment.ProcessorCount;
+    options.Queues = new[] { "critical", "default", "background" };
+    options.ServerTimeout = TimeSpan.FromMinutes(5);
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+    options.ServerCheckInterval = TimeSpan.FromMinutes(1);
+    options.HeartbeatInterval = TimeSpan.FromSeconds(30);
+});
+
+// ========== DEPENDENCY INJECTION ==========
+// Registrar repositórios
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<ILogAtividadeRepository, LogAtividadeRepository>();
+builder.Services.AddScoped<ISessaoUsuarioRepository, SessaoUsuarioRepository>();
+builder.Services.AddScoped<ITokenRecuperacaoRepository, TokenRecuperacaoRepository>();
+
+// Registrar services - versão simplificada para teste do Hangfire
+builder.Services.AddScoped<IBackgroundJobService, SimpleBackgroundJobService>();
 
 // ========== CONFIGURAÇÃO DA AUTENTICAÇÃO JWT ==========
 var jwtKey = builder.Configuration["JWT:SecretKey"] ?? "AcervoEducacional2024!@#$%^&*()_+SecretKeyForProduction";
@@ -213,10 +259,10 @@ app.UseCors("DefaultPolicy");
 // Security Headers
 app.Use(async (context, next) =>
 {
-    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
-    context.Response.Headers.Add("X-Frame-Options", "DENY");
-    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
-    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     await next();
 });
 
@@ -224,10 +270,19 @@ app.Use(async (context, next) =>
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ========== HANGFIRE DASHBOARD ==========
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() },
+    StatsPollingInterval = 2000,
+    DisplayStorageConnectionString = false,
+    DashboardTitle = "Acervo Educacional - Background Jobs",
+    AppPath = "/",
+    DefaultRecordsPerPage = 50
+});
+
 // Controllers
 app.MapControllers();
-
-// Hangfire removido por simplicidade
 
 // Health Check
 app.MapGet("/health", () => new { 
@@ -245,6 +300,34 @@ app.MapGet("/", () => new {
     Documentation = "/swagger"
 }).WithName("Root").WithTags("Info");
 
+// ========== CONFIGURAÇÃO DE JOBS RECORRENTES ==========
+RecurringJob.AddOrUpdate<IBackgroundJobService>(
+    "cleanup-expired-data",
+    x => x.CleanupExpiredDataAsync(),
+    Cron.Daily(2, 0), // Todo dia às 2:00 AM
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+
+RecurringJob.AddOrUpdate<IBackgroundJobService>(
+    "security-analysis",
+    x => x.SecurityAnalysisAsync(),
+    "0 */4 * * *", // A cada 4 horas
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+
+RecurringJob.AddOrUpdate<IBackgroundJobService>(
+    "weekly-reports",
+    x => x.GenerateSystemReportsAsync(),
+    Cron.Weekly(DayOfWeek.Monday, 9, 0), // Segunda-feira às 9:00
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+
+RecurringJob.AddOrUpdate<IBackgroundJobService>(
+    "database-maintenance",
+    x => x.DatabaseMaintenanceAsync(),
+    Cron.Daily(1, 0), // Todo dia à 1:00 AM
+    new RecurringJobOptions { TimeZone = TimeZoneInfo.Local });
+
+// Enfileirar job inicial de limpeza (executar uma vez na inicialização)
+BackgroundJob.Enqueue<IBackgroundJobService>(x => x.DatabaseMaintenanceAsync());
+
 // ========== INICIALIZAÇÃO ==========
 var port = builder.Configuration["ASPNETCORE_URLS"]?.Split(':').LastOrDefault()?.TrimEnd('/') ?? "5000";
 
@@ -252,9 +335,14 @@ Console.WriteLine("🚀 Sistema Acervo Educacional Ferreira Costa");
 Console.WriteLine("===============================================");
 Console.WriteLine($"🌐 API: http://localhost:{port}");
 Console.WriteLine($"📖 Swagger: http://localhost:{port}/swagger");
-// Hangfire removido da versão simplificada
+Console.WriteLine($"⚙️  Hangfire: http://localhost:{port}/hangfire");
 Console.WriteLine($"🏥 Health: http://localhost:{port}/health");
 Console.WriteLine($"🎯 Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine("📊 Background Jobs configurados:");
+Console.WriteLine("   • Limpeza diária (02:00)");
+Console.WriteLine("   • Análise segurança (4 em 4h)");
+Console.WriteLine("   • Relatórios semanais (segunda 09:00)");
+Console.WriteLine("   • Manutenção DB (01:00)");
 Console.WriteLine("===============================================");
 
-app.Run("http://0.0.0.0:5105");
+app.Run("http://0.0.0.0:5106");

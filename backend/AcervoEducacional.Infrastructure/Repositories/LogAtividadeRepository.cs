@@ -92,4 +92,32 @@ public class LogAtividadeRepository : BaseRepository<LogAtividade>, ILogAtividad
     {
         return await GetRecentAsync(count);
     }
+
+    public async Task<IEnumerable<LogAtividade>> GetLogsSinceAsync(DateTime since)
+    {
+        return await _dbSet
+            .Where(l => l.CriadoEm >= since)
+            .OrderByDescending(l => l.CriadoEm)
+            .ToListAsync();
+    }
+
+    public async Task<int> DeleteOldLogsAsync(DateTime cutoffDate)
+    {
+        var oldLogs = await _dbSet
+            .Where(l => l.CriadoEm < cutoffDate)
+            .ToListAsync();
+
+        if (oldLogs.Any())
+        {
+            _dbSet.RemoveRange(oldLogs);
+            await _context.SaveChangesAsync();
+        }
+
+        return oldLogs.Count;
+    }
+
+    public async Task<int> CountTotalLogsAsync()
+    {
+        return await _dbSet.CountAsync();
+    }
 }

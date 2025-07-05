@@ -42,4 +42,11 @@ public class TokenRecuperacaoRepository : BaseRepository<TokenRecuperacao>, ITok
         var tokensExpirados = await _dbSet.Where(t => t.ExpiresAt < DateTime.UtcNow).ToListAsync();
         _dbSet.RemoveRange(tokensExpirados);
     }
+
+    public async Task<IEnumerable<TokenRecuperacao>> GetExpiredTokensAsync()
+    {
+        return await _dbSet
+            .Where(t => t.ExpiresAt < DateTime.UtcNow)
+            .ToListAsync();
+    }
 }

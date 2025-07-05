@@ -12,22 +12,6 @@ using AcervoEducacional.Domain.Interfaces;
 
 namespace AcervoEducacional.Application.Services;
 
-public interface ISecurityService
-{
-    Task<bool> IsRateLimitExceededAsync(string identifier, string action, int maxAttempts = 5, int windowMinutes = 15);
-    Task<string> HashPasswordAsync(string password);
-    Task<bool> VerifyPasswordAsync(string password, string hash);
-    Task<bool> ValidatePasswordStrengthAsync(string password);
-    Task<string> GenerateSecureTokenAsync(int length = 32);
-    Task<bool> IsIpAddressBlockedAsync(string ipAddress);
-    Task BlockIpAddressAsync(string ipAddress, int durationMinutes = 60, string reason = "");
-    Task<bool> ValidateEmailFormatAsync(string email);
-    Task<bool> IsEmailDomainAllowedAsync(string email);
-    Task LogSecurityEventAsync(int? usuarioId, string eventType, string description, string? ipAddress = null, string? userAgent = null);
-    Task<bool> DetectSuspiciousActivityAsync(int usuarioId, string ipAddress, string userAgent);
-    Task CleanupExpiredDataAsync();
-}
-
 public class SecurityService : ISecurityService
 {
     private readonly ILogAtividadeRepository _logRepository;

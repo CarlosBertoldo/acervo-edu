@@ -51,6 +51,9 @@ public interface ILogAtividadeRepository : IBaseRepository<LogAtividade>
     Task<IEnumerable<LogAtividade>> GetByCursoIdAsync(int cursoId);
     Task<IEnumerable<LogAtividade>> GetByTipoAtividadeAsync(TipoAtividade tipo);
     Task<IEnumerable<LogAtividade>> GetRecentesAsync(int count = 10);
+    Task<IEnumerable<LogAtividade>> GetLogsSinceAsync(DateTime since);
+    Task<int> DeleteOldLogsAsync(DateTime cutoffDate);
+    Task<int> CountTotalLogsAsync();
 }
 
 public interface ISessaoUsuarioRepository : IBaseRepository<SessaoUsuario>
@@ -60,6 +63,9 @@ public interface ISessaoUsuarioRepository : IBaseRepository<SessaoUsuario>
     Task<IEnumerable<SessaoUsuario>> GetByUsuarioIdAsync(int usuarioId);
     Task RevogarSessoesUsuarioAsync(int usuarioId);
     Task LimparSessoesExpiradasAsync();
+    Task<IEnumerable<SessaoUsuario>> GetExpiredSessionsAsync(DateTime cutoffDate);
+    Task<IEnumerable<SessaoUsuario>> GetActiveSessionsAsync();
+    Task<int> CountActiveSessionsAsync();
 }
 
 public interface ITokenRecuperacaoRepository : IBaseRepository<TokenRecuperacao>
@@ -68,6 +74,7 @@ public interface ITokenRecuperacaoRepository : IBaseRepository<TokenRecuperacao>
     Task<IEnumerable<TokenRecuperacao>> GetByUsuarioIdAsync(int usuarioId);
     Task InvalidarTokensUsuarioAsync(int usuarioId);
     Task LimparTokensExpiradosAsync();
+    Task<IEnumerable<TokenRecuperacao>> GetExpiredTokensAsync();
 }
 
 public interface IConfiguracaoSistemaRepository : IBaseRepository<ConfiguracaoSistema>

@@ -52,4 +52,26 @@ public class SessaoUsuarioRepository : BaseRepository<SessaoUsuario>, ISessaoUsu
         }
         _dbSet.UpdateRange(sessoesExpiradas);
     }
+
+    public async Task<IEnumerable<SessaoUsuario>> GetExpiredSessionsAsync(DateTime cutoffDate)
+    {
+        return await _dbSet
+            .Where(s => s.ExpiresAt < cutoffDate || s.RefreshExpiresAt < cutoffDate)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<SessaoUsuario>> GetActiveSessionsAsync()
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(s => !s.IsRevogada && s.ExpiresAt > now && s.RefreshExpiresAt > now)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountActiveSessionsAsync()
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .CountAsync(s => !s.IsRevogada && s.ExpiresAt > now && s.RefreshExpiresAt > now);
+    }
 }

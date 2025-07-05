@@ -98,7 +98,11 @@ public enum TipoAtividade
     EdicaoUsuario = 18,
     ExclusaoUsuario = 19,
     AlteracaoStatusCurso = 20,
-    EventoSeguranca = 21
+    EventoSeguranca = 21,
+    ManutencaoSistema = 22,
+    ErroSistema = 23,
+    AlertaSeguranca = 24,
+    RelatorioSistema = 25
 }
 
 public enum StatusSincronizacao
